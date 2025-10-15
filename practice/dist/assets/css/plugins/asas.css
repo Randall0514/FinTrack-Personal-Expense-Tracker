@@ -1,0 +1,317 @@
+    <style>
+/* Custom Styles */
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    min-height: 100vh;
+    font-weight: 600;
+}
+
+.pc-container {
+    background: transparent !important;
+}
+
+.pc-content {
+    padding: 20px;
+}
+
+
+/* Page Header */
+
+.page-header {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.page-header-title h5 {
+    color: white !important;
+    font-weight: 700;
+    font-size: 1.8rem;
+}
+
+.breadcrumb {
+    background: transparent !important;
+}
+
+.breadcrumb-item,
+.breadcrumb-item a {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 600;
+}
+
+.breadcrumb-item a:hover {
+    color: white !important;
+}
+
+
+/* Cards */
+
+.card {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    border-radius: 15px !important;
+    border: none !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    border-bottom: none !important;
+    padding: 20px !important;
+    border-radius: 15px 15px 0 0 !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.card-header h5 {
+    color: white !important;
+    font-weight: 700;
+    font-size: 1.3rem;
+    margin: 0;
+}
+
+
+/* Table */
+
+.table-wrapper {
+    overflow-x: auto;
+    padding: 25px;
+}
+
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table thead th {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    color: white;
+    font-weight: 700;
+    padding: 15px;
+    text-align: center;
+    border: none;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table thead th:first-child {
+    border-radius: 10px 0 0 0;
+}
+
+.table thead th:last-child {
+    border-radius: 0 10px 0 0;
+}
+
+.table tbody tr {
+    background: white;
+    transition: all 0.3s;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.table tbody tr:hover {
+    background: #f9fafb;
+    transform: scale(1.01);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.15);
+}
+
+.table tbody td {
+    padding: 18px 15px;
+    text-align: center;
+    border: none;
+    color: #374151;
+    font-weight: 500;
+}
+
+.category-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.amount-cell {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #059669;
+}
+
+
+/* Buttons */
+
+.btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+
+/* Summary Cards */
+
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.summary-card {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    padding: 20px;
+    border-radius: 12px;
+    color: white;
+    text-align: center;
+}
+
+.summary-card h6 {
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    opacity: 0.9;
+}
+
+.summary-card h3 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+    padding: 0 25px 25px;
+}
+
+.search-input {
+    padding: 8px 15px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.3s;
+}
+
+.search-input:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+</style><?php session_start();
+include "../database/config/db.php"; // connect to database
+$categories=[ 'Food & Dining',
+'Transportation',
+'Shopping',
+'Bills & Utilities',
+'Entertainment',
+'Health & Fitness',
+'Education',
+'Travel',
+'Others'];
+// Replace with actual database query later
+$expenses=[]; // empty by default
+$totalExpenses=array_sum(array_column($expenses, 'amount'));
+$expenseCount=count($expenses);
+if (isset($_POST['submit'])) {
+    // Handle form submission for adding/editing expenses
+}
+
+else {
+    // ---------------------- ADD EXPENSE ----------------------
+    if (isset($_POST['add_expense'])) {
+        $category=$_POST['category'];
+        $amount=$_POST['amount'];
+        $date=$_POST['date'];
+        $description=$_POST['description'];
+        $payment_method=$_POST['payment_method'];
+        $sql="INSERT INTO expenses (category, amount, date, description, payment_method)
+ VALUES ('$category', '$amount', '$date', '$description', '$payment_method')";
+ $conn->query($sql);
+    }
+    // ---------------------- EDIT EXPENSE ----------------------
+    if (isset($_POST['edit_expense'])) {
+        $id=$_POST['id'];
+        $category=$_POST['category'];
+        $amount=$_POST['amount'];
+        $date=$_POST['date'];
+        $description=$_POST['description'];
+        $payment_method=$_POST['payment_method'];
+        $sql="UPDATE expenses SET 
+ category='$category',
+        amount='$amount',
+        date='$date',
+        description='$description',
+        payment_method='$payment_method' WHERE id=$id";
+ $conn->query($sql);
+    }
+    // ---------------------- DELETE EXPENSE ----------------------
+    if (isset($_GET['delete'])) {
+        $id=$_GET['delete'];
+        $conn->query("DELETE FROM expenses WHERE id=$id");
+        header("Location: manage_expenses.php");
+        exit;
+    }
+    // ---------------------- FETCH ALL EXPENSES ----------------------
+    $expenses=[];
+    $result=$conn->query("SELECT * FROM expenses ORDER BY date DESC");
+    if ($result->num_rows > 0) {
+        while ($row=$result->fetch_assoc()) {
+            $expenses[]=$row;
+        }
+    }
+    $totalExpenses=array_sum(array_column($expenses, 'amount'));
+    $expenseCount=count($expenses);
+    ?>

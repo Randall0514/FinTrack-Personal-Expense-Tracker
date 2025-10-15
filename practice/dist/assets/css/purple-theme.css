@@ -1,0 +1,500 @@
+/* ============================================
+   PURPLE GRADIENT THEME - Universal Styles
+   Add this CSS file to all your pages
+   ============================================ */
+
+
+/* Global Body Styling */
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    min-height: 100vh;
+    font-weight: 600;
+}
+
+html {
+    overflow-x: hidden;
+}
+
+
+/* Container Backgrounds */
+
+.pc-container {
+    background: transparent !important;
+}
+
+.pc-content {
+    padding: 20px;
+}
+
+
+/* Page Header Styling */
+
+.page-header {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.page-header-title h5 {
+    color: white !important;
+    font-weight: 700;
+    font-size: 1.8rem;
+}
+
+
+/* Breadcrumb Styling */
+
+.breadcrumb {
+    background: transparent !important;
+}
+
+.breadcrumb-item,
+.breadcrumb-item a {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 600;
+}
+
+.breadcrumb-item a:hover {
+    color: white !important;
+}
+
+
+/* Card Styling */
+
+.card {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    border-radius: 15px !important;
+    border: none !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3) !important;
+}
+
+.card-header {
+    background: transparent !important;
+    border-bottom: 2px solid #f0f0f0 !important;
+    padding: 20px !important;
+}
+
+.card-header h5 {
+    color: #667eea !important;
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+.card-body {
+    padding: 25px !important;
+}
+
+.card-body h3 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+    font-size: 2rem;
+}
+
+
+/* Gradient Backgrounds */
+
+.bg-theme-bg-1,
+.bg-primary,
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border: none !important;
+}
+
+.bg-theme-bg-2,
+.btn-secondary {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+    border: none !important;
+}
+
+
+/* Progress Bars */
+
+.w-full.bg-theme-bodybg,
+.progress {
+    background: #e0e0e0 !important;
+}
+
+
+/* Table Styling */
+
+.table-card .card-body {
+    padding: 0 !important;
+}
+
+.table-responsive {
+    padding: 25px;
+}
+
+.table {
+    border-collapse: separate;
+    border-spacing: 0 10px;
+}
+
+.table tbody tr {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s;
+}
+
+.table tbody tr:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
+
+.table tbody tr td {
+    padding: 20px 15px;
+    vertical-align: middle;
+    border: none;
+}
+
+.table tbody tr td:first-child {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+
+.table tbody tr td:last-child {
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.table h6 {
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.table p {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.table thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white !important;
+    font-weight: 700;
+    padding: 15px;
+    border: none;
+}
+
+
+/* Badge/Button Styling */
+
+.badge,
+.btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.badge.bg-theme-bg-1,
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+}
+
+.badge.bg-theme-bg-1:hover,
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.badge.bg-theme-bg-2,
+.btn-secondary {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+    color: white !important;
+}
+
+.badge.bg-theme-bg-2:hover,
+.btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
+}
+
+
+/* Avatar/Image Styling */
+
+.rounded-full {
+    border: 3px solid #667eea;
+    padding: 2px;
+}
+
+
+/* Status Colors */
+
+.text-success-500,
+.text-success {
+    color: #10b981 !important;
+}
+
+.text-danger-500,
+.text-danger {
+    color: #ef4444 !important;
+}
+
+.text-warning-500,
+.text-warning {
+    color: #f59e0b !important;
+}
+
+.text-info-500,
+.text-info {
+    color: #3b82f6 !important;
+}
+
+
+/* Loader/Preloader */
+
+.loader-bg {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.loader-fill {
+    background: white !important;
+}
+
+
+/* Form Elements */
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1) !important;
+}
+
+
+/* Modal Styling */
+
+.modal-content {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    border: none;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px 15px 0 0;
+}
+
+.modal-title {
+    color: white !important;
+    font-weight: 700;
+}
+
+
+/* Alert Styling */
+
+.alert {
+    border-radius: 10px;
+    border: none;
+    font-weight: 600;
+}
+
+.alert-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border-left: 4px solid #10b981;
+}
+
+.alert-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-left: 4px solid #ef4444;
+}
+
+.alert-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border-left: 4px solid #f59e0b;
+}
+
+.alert-info {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border-left: 4px solid #3b82f6;
+}
+
+
+/* Sidebar Styling (if you have one) */
+
+.pc-sidebar {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.pc-sidebar .pc-link {
+    transition: all 0.3s;
+}
+
+.pc-sidebar .pc-link:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+}
+
+.pc-sidebar .pc-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+}
+
+
+/* Header/Navbar Styling */
+
+.pc-header {
+    background: rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.pc-header .pc-link {
+    color: white !important;
+}
+
+
+/* Animation for page load */
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.col-span-12,
+.card {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.col-span-12:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.col-span-12:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.col-span-12:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.col-span-12:nth-child(4) {
+    animation-delay: 0.4s;
+}
+
+
+/* Pagination Styling */
+
+.pagination .page-link {
+    background: white;
+    border: 2px solid #e0e0e0;
+    color: #667eea;
+    font-weight: 600;
+    margin: 0 3px;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.pagination .page-link:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+}
+
+.pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: transparent;
+}
+
+
+/* Dropdown Styling */
+
+.dropdown-menu {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.dropdown-item:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+
+/* Scrollbar Styling */
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+
+/* Responsive Adjustments */
+
+@media (max-width: 768px) {
+    .page-header-title h5 {
+        font-size: 1.4rem;
+    }
+    .card-body h3 {
+        font-size: 1.5rem;
+    }
+    .table-responsive {
+        padding: 15px;
+    }
+}

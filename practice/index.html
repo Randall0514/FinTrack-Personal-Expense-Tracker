@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinTrack - Personal Expense Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            overflow-x: hidden;
+        }
+        /* Navigation */
+        
+        nav {
+            position: fixed;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 3rem;
+            list-style: none;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 600;
+            font-size: 1.2rem;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: #667eea;
+        }
+        /* Hero Section */
+        
+        .hero {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6rem 5% 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            top: -200px;
+            right: -200px;
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .hero::after {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            bottom: -100px;
+            left: -100px;
+            animation: float 8s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+        
+        .hero-content {
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            z-index: 1;
+        }
+        
+        .hero-text h1 {
+            font-size: 3.5rem;
+            color: white;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+        
+        .hero-text p {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 2rem;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 2.5rem;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .hero-image {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .mockup-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        /* Features Section */
+        
+        .features {
+            padding: 6rem 5%;
+            background: #f8f9fa;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .section-subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 4rem;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 15px;
+            text-align: center;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .feature-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .feature-card p {
+            color: #666;
+            line-height: 1.8;
+        }
+        /* Benefits Section */
+        
+        .benefits {
+            padding: 6rem 5%;
+            background: white;
+        }
+        
+        .benefits-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+        
+        .benefits-image {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            color: white;
+        }
+        
+        .benefits-list {
+            list-style: none;
+        }
+        
+        .benefits-list li {
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s;
+        }
+        
+        .benefits-list li:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(10px);
+        }
+        
+        .benefits-list strong {
+            display: block;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        /* Stakeholders Section */
+        
+        .stakeholders {
+            padding: 6rem 5%;
+            background: #f8f9fa;
+        }
+        
+        .stakeholders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .stakeholder-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        .stakeholder-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stakeholder-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        /* CTA Section */
+        
+        .cta-section {
+            padding: 6rem 5%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            text-align: center;
+            color: white;
+        }
+        
+        .cta-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .cta-section p {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        .cta-button-white {
+            display: inline-block;
+            padding: 1rem 2.5rem;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .cta-button-white:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+        /* Footer */
+        
+        footer {
+            background: #1a1a1a;
+            color: white;
+            padding: 3rem 5%;
+            text-align: center;
+        }
+        
+        footer p {
+            opacity: 0.8;
+        }
+        /* PC/Laptop Optimization - Fixed widths for larger screens */
+        
+        @media (min-width: 1400px) {
+            nav,
+            .hero,
+            .features,
+            .benefits,
+            .stakeholders,
+            .cta-section {
+                padding-left: calc((100% - 1400px) / 2);
+                padding-right: calc((100% - 1400px) / 2);
+            }
+            .hero-content {
+                max-width: 1400px;
+            }
+            .features-grid {
+                max-width: 1400px;
+            }
+            .benefits-content {
+                max-width: 1400px;
+            }
+            .stakeholders-grid {
+                max-width: 1400px;
+            }
+        }
+        /* Standard Laptop Size (1024px - 1399px) */
+        
+        @media (min-width: 1024px) and (max-width: 1399px) {
+            .hero-text h1 {
+                font-size: 3rem;
+            }
+            .hero-text p {
+                font-size: 1.2rem;
+            }
+            .features-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        /* Remove mobile responsiveness - maintain desktop layout */
+        
+        @media (max-width: 1023px) {
+            body {
+                min-width: 1024px;
+                overflow-x: auto;
+            }
+            nav {
+                padding: 1rem 3%;
+            }
+            .hero-content {
+                padding: 0 3%;
+            }
+            .hero-text h1 {
+                font-size: 2.5rem;
+            }
+            .hero-text p {
+                font-size: 1.1rem;
+            }
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">FinTrack</div>
+        <ul class="nav-links">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#benefits">Benefits</a></li>
+            <li><a href="#users">For You</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1>Take Control of Your Finances</h1>
+                <p>Track expenses, manage budgets, and build better financial habits with FinTrack - your personal expense tracker.</p>
+                <a href="http://localhost/practice/login.php" class="cta-button">Get Started Free</a>
+            </div>
+            <div class="hero-image">
+                <div class="mockup-placeholder">💰</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <h2 class="section-title">Powerful Features</h2>
+        <p class="section-subtitle">Everything you need to manage your personal finances</p>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📝</div>
+                <h3>Easy Expense Recording</h3>
+                <p>Quickly log your daily expenses with amount, category, date, and description in just seconds.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Smart Categorization</h3>
+                <p>Organize spending into custom categories for clear insights into where your money goes.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📈</div>
+                <h3>Detailed Reports</h3>
+                <p>View comprehensive summaries of your spending patterns - daily, weekly, or monthly.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">✏️</div>
+                <h3>Edit & Delete</h3>
+                <p>Full control over your records. Easily modify or remove any expense entry.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💻</div>
+                <h3>Offline Access</h3>
+                <p>Desktop-based system that works completely offline. No internet required.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3>Financial Insights</h3>
+                <p>Gain awareness of spending habits to improve budgeting decisions and financial discipline.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="benefits" id="benefits">
+        <h2 class="section-title">Why Choose FinTrack?</h2>
+        <p class="section-subtitle">Simple, powerful, and designed for your success</p>
+        <div class="benefits-content">
+            <div class="benefits-image">💳</div>
+            <ul class="benefits-list">
+                <li>
+                    <strong>Simple & User-Friendly</strong> Unlike complex apps, FinTrack focuses on what matters - easy expense tracking without unnecessary features.
+                </li>
+                <li>
+                    <strong>Build Financial Discipline</strong> Categorized summaries help you understand and improve your spending habits over time.
+                </li>
+                <li>
+                    <strong>Works Offline</strong> Desktop-based system means no internet connection needed. Your data stays private and local.
+                </li>
+                <li>
+                    <strong>Identify Patterns</strong> Clear visualizations and reports help you spot spending patterns and make better budgeting decisions.
+                </li>
+                <li>
+                    <strong>Save Time</strong> Fast data entry and automatic calculations eliminate time-consuming manual tracking.
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Stakeholders Section -->
+    <section class="stakeholders" id="users">
+        <h2 class="section-title">Perfect For</h2>
+        <p class="section-subtitle">Whether you're a student, professional, or managing household finances</p>
+        <div class="stakeholders-grid">
+            <div class="stakeholder-card">
+                <div class="stakeholder-icon">🎓</div>
+                <h3>Students</h3>
+                <p>Track your allowance, manage student expenses, and build good financial habits early.</p>
+            </div>
+            <div class="stakeholder-card">
+                <div class="stakeholder-icon">💼</div>
+                <h3>Professionals</h3>
+                <p>Monitor monthly budgets, track business expenses, and maintain financial discipline.</p>
+            </div>
+            <div class="stakeholder-card">
+                <div class="stakeholder-icon">👨‍👩‍👧‍👦</div>
+                <h3>Families</h3>
+                <p>Manage household expenses, plan family budgets, and keep everyone financially organized.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <h2>Ready to Transform Your Financial Life?</h2>
+        <p>Join thousands of users who have taken control of their finances with FinTrack</p>
+        <a href="http://localhost/practice/login.php" class="cta-button-white">Download FinTrack Now</a>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 FinTrack - Personal Expense Tracker. All rights reserved.</p>
+        <p>Developed by FBSB10-Group2</p>
+    </footer>
+</body>
+
+</html>
