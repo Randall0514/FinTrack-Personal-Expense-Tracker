@@ -46,7 +46,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             setcookie("jwt_token", $jwt, time() + (60 * 60), "/", "localhost", false, true);
 
             // ✅ Redirect to dashboard
-            header("Location: http://localhost/practice/dist/admin/dashboard.php");
+            header("Location: http://localhost/FinTrack-Personal-Expense-Tracker/practice/dist/admin/dashboard.php");
             exit;
         } else {
             echo "<script>alert('Invalid password!'); window.history.back();</script>";

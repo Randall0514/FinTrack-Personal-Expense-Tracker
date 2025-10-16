@@ -10,6 +10,80 @@ use Firebase\JWT\Key;
 
 include "../database/config/db.php";
 
+// Include notification helper if it exists, otherwise define functions inline
+$helper_path = __DIR__ . '/notification_helper.php';
+if (file_exists($helper_path)) {
+    include $helper_path;
+} else {
+    // Inline helper functions if file doesn't exist
+    function isNotificationRead($conn, $user_id, $notification_key) {
+        $create_table = "CREATE TABLE IF NOT EXISTS notifications_read (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            notification_key VARCHAR(255) NOT NULL,
+            read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP NULL,
+            UNIQUE KEY unique_read_notification (user_id, notification_key),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )";
+        @$conn->query($create_table);
+        
+        @$conn->query("DELETE FROM notifications_read WHERE expires_at IS NOT NULL AND expires_at < NOW()");
+        
+        $check_query = @$conn->prepare("SELECT id FROM notifications_read 
+            WHERE user_id = ? AND notification_key = ? AND (expires_at IS NULL OR expires_at > NOW())");
+        
+        if ($check_query) {
+            $check_query->bind_param("is", $user_id, $notification_key);
+            $check_query->execute();
+            $result = $check_query->get_result();
+            $is_read = $result->num_rows > 0;
+            $check_query->close();
+            return $is_read;
+        }
+        return false;
+    }
+    
+    function isNotificationDismissed($conn, $user_id, $notification_key) {
+        $create_table = "CREATE TABLE IF NOT EXISTS notifications_dismissed (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            notification_type VARCHAR(50) NOT NULL,
+            notification_key VARCHAR(255) NOT NULL,
+            dismissed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP NULL,
+            UNIQUE KEY unique_notification (user_id, notification_key),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )";
+        @$conn->query($create_table);
+        
+        @$conn->query("DELETE FROM notifications_dismissed WHERE expires_at IS NOT NULL AND expires_at < NOW()");
+        
+        $check_query = @$conn->prepare("SELECT id FROM notifications_dismissed 
+            WHERE user_id = ? AND notification_key = ? AND (expires_at IS NULL OR expires_at > NOW())");
+        
+        if ($check_query) {
+            $check_query->bind_param("is", $user_id, $notification_key);
+            $check_query->execute();
+            $result = $check_query->get_result();
+            $is_dismissed = $result->num_rows > 0;
+            $check_query->close();
+            return $is_dismissed;
+        }
+        return false;
+    }
+    
+    function countUnreadNotifications($conn, $user_id, $all_notification_keys) {
+        $unread_count = 0;
+        foreach ($all_notification_keys as $key) {
+            if (!isNotificationRead($conn, $user_id, $key)) {
+                $unread_count++;
+            }
+        }
+        return $unread_count;
+    }
+}
+
 // JWT Authentication
 $secret_key = "your_secret_key_here_change_this_in_production";
 
@@ -54,7 +128,7 @@ $userData['email'] = $userData['email'] ?? 'user@example.com';
 
 // ===================== NOTIFICATION SYSTEM =====================
 $notifications = [];
-$unreadCount = 0;
+$notification_keys = []; // Track all notification keys for unread count
 
 // Fetch user's budget data
 try {
@@ -122,92 +196,197 @@ $dailyPercentage = $dailyBudget > 0 ? ($dailySpending / $dailyBudget) * 100 : 0;
 $weeklyPercentage = $weeklyBudget > 0 ? ($weeklySpending / $weeklyBudget) * 100 : 0;
 $monthlyPercentage = $monthlyBudget > 0 ? ($monthlySpending / $monthlyBudget) * 100 : 0;
 
-// Daily budget notifications
+// Daily budget notifications - LOWERED THRESHOLDS
 if ($dailySpending > $dailyBudget) {
-    $notifications[] = [
-        'icon' => 'alert-circle',
-        'color' => 'red',
-        'title' => 'Daily Budget Exceeded!',
-        'message' => 'You have exceeded your daily budget by ₱' . number_format($dailySpending - $dailyBudget, 2),
-        'time' => 'Just now',
-        'type' => 'danger'
-    ];
-} elseif ($dailyPercentage >= 90) {
-    $notifications[] = [
-        'icon' => 'alert-triangle',
-        'color' => 'orange',
-        'title' => 'Daily Budget Warning',
-        'message' => 'You have used ' . number_format($dailyPercentage, 1) . '% of your daily budget',
-        'time' => 'Just now',
-        'type' => 'warning'
-    ];
-}
-
-// Weekly budget notifications
-if ($weeklySpending > $weeklyBudget) {
-    $notifications[] = [
-        'icon' => 'alert-circle',
-        'color' => 'red',
-        'title' => 'Weekly Budget Exceeded!',
-        'message' => 'You have exceeded your weekly budget by ₱' . number_format($weeklySpending - $weeklyBudget, 2),
-        'time' => 'Today',
-        'type' => 'danger'
-    ];
-} elseif ($weeklyPercentage >= 80) {
-    $notifications[] = [
-        'icon' => 'alert-triangle',
-        'color' => 'orange',
-        'title' => 'Weekly Budget Alert',
-        'message' => 'You have used ' . number_format($weeklyPercentage, 1) . '% of your weekly budget',
-        'time' => 'Today',
-        'type' => 'warning'
-    ];
-}
-
-// Monthly budget notifications
-if ($monthlySpending > $monthlyBudget) {
-    $notifications[] = [
-        'icon' => 'alert-circle',
-        'color' => 'red',
-        'title' => 'Monthly Budget Exceeded!',
-        'message' => 'You have exceeded your monthly budget by ₱' . number_format($monthlySpending - $monthlyBudget, 2),
-        'time' => date('M d'),
-        'type' => 'danger'
-    ];
-} elseif ($monthlyPercentage >= 75) {
-    $notifications[] = [
-        'icon' => 'info',
-        'color' => 'blue',
-        'title' => 'Monthly Budget Info',
-        'message' => 'You have used ' . number_format($monthlyPercentage, 1) . '% of your monthly budget',
-        'time' => date('M d'),
-        'type' => 'info'
-    ];
-}
-
-// Recent expense notification (last 24 hours)
-if (!empty($expenses)) {
-    $latestExpense = $expenses[0];
-    $expenseTime = strtotime($latestExpense['date']);
-    $currentTime = time();
-    $timeDiff = $currentTime - $expenseTime;
-    
-    if ($timeDiff < 86400) { // Less than 24 hours
-        $hours = floor($timeDiff / 3600);
-        $timeAgo = $hours > 0 ? $hours . ' hours ago' : 'Just now';
-        
+    $key = 'daily_budget_exceeded_' . $today;
+    if (!isNotificationDismissed($conn, $user_id, $key)) {
+        $notification_keys[] = $key;
         $notifications[] = [
-            'icon' => 'check-circle',
-            'color' => 'green',
-            'title' => 'Expense Added',
-            'message' => '₱' . number_format($latestExpense['amount'], 2) . ' - ' . $latestExpense['category'],
-            'time' => $timeAgo,
-            'type' => 'success'
+            'icon' => 'alert-circle',
+            'color' => 'red',
+            'title' => 'Daily Budget Exceeded!',
+            'message' => 'You have exceeded your daily budget by ₱' . number_format($dailySpending - $dailyBudget, 2),
+            'time' => 'Just now',
+            'type' => 'danger',
+            'key' => $key,
+            'is_read' => isNotificationRead($conn, $user_id, $key)
+        ];
+    }
+} elseif ($dailyPercentage >= 70) { // CHANGED FROM 90% to 70%
+    $key = 'daily_budget_warning_' . $today;
+    if (!isNotificationDismissed($conn, $user_id, $key)) {
+        $notification_keys[] = $key;
+        $notifications[] = [
+            'icon' => 'alert-triangle',
+            'color' => 'orange',
+            'title' => 'Daily Budget Warning',
+            'message' => 'You have used ' . number_format($dailyPercentage, 1) . '% of your daily budget',
+            'time' => 'Just now',
+            'type' => 'warning',
+            'key' => $key,
+            'is_read' => isNotificationRead($conn, $user_id, $key)
+        ];
+    }
+} elseif ($dailyPercentage >= 50) { // NEW: Info at 50%
+    $key = 'daily_budget_info_' . $today;
+    if (!isNotificationDismissed($conn, $user_id, $key)) {
+        $notification_keys[] = $key;
+        $notifications[] = [
+            'icon' => 'info',
+            'color' => 'blue',
+            'title' => 'Daily Budget Update',
+            'message' => 'You have used ' . number_format($dailyPercentage, 1) . '% of your daily budget',
+            'time' => 'Just now',
+            'type' => 'info',
+            'key' => $key,
+            'is_read' => isNotificationRead($conn, $user_id, $key)
         ];
     }
 }
 
-$unreadCount = count($notifications);
+// Weekly budget notifications - LOWERED THRESHOLDS
+if ($weeklySpending > $weeklyBudget) {
+    $key = 'weekly_budget_exceeded_' . $weekStart;
+    if (!isNotificationDismissed($conn, $user_id, $key)) {
+        $notification_keys[] = $key;
+        $notifications[] = [
+            'icon' => 'alert-circle',
+            'color' => 'red',
+            'title' => 'Weekly Budget Exceeded!',
+            'message' => 'You have exceeded your weekly budget by ₱' . number_format($weeklySpending - $weeklyBudget, 2),
+            'time' => 'Today',
+            'type' => 'danger',
+            'key' => $key,
+            'is_read' => isNotificationRead($conn, $user_id, $key)
+        ];
+    }
+} elseif ($weeklyPercentage >= 70) { // CHANGED FROM 80% to 70%
+    $key = 'weekly_budget_warning_' . $weekStart;
+    if (!isNotificationDismissed($conn, $user_id, $key)) {
+        $notification_keys[] = $key;
+        $notifications[] = [
+            'icon' => 'alert-triangle',
+            'color' => 'orange',
+            'title' => 'Weekly Budget Alert',
+            'message' => 'You have used ' . number_format($weeklyPercentage, 1) . '% of your weekly budget',
+            'time' => 'Today',
+            'type' => 'warning',
+            'key' => $key,
+            'is_read' => isNotificationRead($conn, $user_id, $key)
+        ];
+    }
+} elseif ($weeklyPercentage >= 50) { // NEW: Info at 50%
+    $key = 'weekly_budget_info_' . $weekStart;
+    if (!isNotificationDismissed($conn, $user_id, $key)) {
+        $notification_keys[] = $key;
+        $notifications[] = [
+            'icon' => 'info',
+            'color' => 'blue',
+            'title' => 'Weekly Budget Update',
+            'message' => 'You have used ' . number_format($weeklyPercentage, 1) . '% of your weekly budget',
+            'time' => 'Today',
+            'type' => 'info',
+            'key' => $key,
+            'is_read' => isNotificationRead($conn, $user_id, $key)
+        ];
+    }
+}
+
+// Monthly budget notifications - LOWERED THRESHOLDS
+if ($monthlySpending > $monthlyBudget) {
+    $key = 'monthly_budget_exceeded_' . $currentMonth;
+    if (!isNotificationDismissed($conn, $user_id, $key)) {
+        $notification_keys[] = $key;
+        $notifications[] = [
+            'icon' => 'alert-circle',
+            'color' => 'red',
+            'title' => 'Monthly Budget Exceeded!',
+            'message' => 'You have exceeded your monthly budget by ₱' . number_format($monthlySpending - $monthlyBudget, 2),
+            'time' => date('M d'),
+            'type' => 'danger',
+            'key' => $key,
+            'is_read' => isNotificationRead($conn, $user_id, $key)
+        ];
+    }
+} elseif ($monthlyPercentage >= 70) { // CHANGED FROM 75% to 70%
+    $key = 'monthly_budget_warning_' . $currentMonth;
+    if (!isNotificationDismissed($conn, $user_id, $key)) {
+        $notification_keys[] = $key;
+        $notifications[] = [
+            'icon' => 'alert-triangle',
+            'color' => 'orange',
+            'title' => 'Monthly Budget Warning',
+            'message' => 'You have used ' . number_format($monthlyPercentage, 1) . '% of your monthly budget',
+            'time' => date('M d'),
+            'type' => 'warning',
+            'key' => $key,
+            'is_read' => isNotificationRead($conn, $user_id, $key)
+        ];
+    }
+} elseif ($monthlyPercentage >= 50) { // CHANGED FROM 75% to 50%
+    $key = 'monthly_budget_info_' . $currentMonth;
+    if (!isNotificationDismissed($conn, $user_id, $key)) {
+        $notification_keys[] = $key;
+        $notifications[] = [
+            'icon' => 'info',
+            'color' => 'blue',
+            'title' => 'Monthly Budget Info',
+            'message' => 'You have used ' . number_format($monthlyPercentage, 1) . '% of your monthly budget',
+            'time' => date('M d'),
+            'type' => 'info',
+            'key' => $key,
+            'is_read' => isNotificationRead($conn, $user_id, $key)
+        ];
+    }
+}
+
+// Recent expense notifications (last 7 DAYS instead of 24 hours) - SHOW MULTIPLE EXPENSES
+$sevenDaysAgo = date('Y-m-d', strtotime('-7 days'));
+$expenseCount = 0;
+$maxExpensesToShow = 5; // Limit to last 5 expenses
+
+foreach ($expenses as $expense) {
+    if ($expenseCount >= $maxExpensesToShow) break;
+    
+    $expenseDate = $expense['date'];
+    if ($expenseDate >= $sevenDaysAgo) {
+        $expenseTime = strtotime($expense['date']);
+        $currentTime = time();
+        $timeDiff = $currentTime - $expenseTime;
+        
+        // Calculate time ago
+        $timeAgo = '';
+        if ($timeDiff < 3600) {
+            $minutes = floor($timeDiff / 60);
+            $timeAgo = $minutes <= 1 ? 'Just now' : $minutes . ' min ago';
+        } elseif ($timeDiff < 86400) {
+            $hours = floor($timeDiff / 3600);
+            $timeAgo = $hours . ' hour' . ($hours > 1 ? 's' : '') . ' ago';
+        } else {
+            $days = floor($timeDiff / 86400);
+            $timeAgo = $days . ' day' . ($days > 1 ? 's' : '') . ' ago';
+        }
+        
+        $key = 'expense_' . $expense['id'];
+        if (!isNotificationDismissed($conn, $user_id, $key)) {
+            $notification_keys[] = $key;
+            $notifications[] = [
+                'icon' => 'shopping-cart',
+                'color' => 'green',
+                'title' => 'Expense Recorded',
+                'message' => '₱' . number_format($expense['amount'], 2) . ' - ' . $expense['category'],
+                'time' => $timeAgo,
+                'type' => 'success',
+                'key' => $key,
+                'is_read' => isNotificationRead($conn, $user_id, $key)
+            ];
+            $expenseCount++;
+        }
+    }
+}
+
+// Count UNREAD notifications only
+$unreadCount = countUnreadNotifications($conn, $user_id, $notification_keys);
 ?>
 
 <!-- [ Header Topbar ] start -->
@@ -246,7 +425,7 @@ $unreadCount = count($notifications);
       <ul class="inline-flex *:min-h-header-height *:inline-flex *:items-center">
         
         <!-- ================= NOTIFICATION DROPDOWN ================= -->
-        <li class="dropdown pc-h-item">
+        <li class="dropdown pc-h-item" id="notification-dropdown">
           <a class="pc-head-link dropdown-toggle me-0 relative" data-pc-toggle="dropdown" href="#" role="button"
             aria-haspopup="false" aria-expanded="false">
             <i data-feather="bell"></i>
@@ -288,7 +467,7 @@ $unreadCount = count($notifications);
               <?php if (!empty($notifications)): ?>
                 <div class="p-3 space-y-2">
                   <?php foreach ($notifications as $index => $notification): ?>
-                  <div class="notification-card bg-white rounded-xl p-4 hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-purple-200">
+                  <div class="notification-card bg-white rounded-xl p-4 hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-purple-200 <?php echo $notification['is_read'] ? 'opacity-70' : ''; ?>">
                     <div class="flex items-start gap-4">
                       <!-- Icon -->
                       <div class="shrink-0">
@@ -302,6 +481,9 @@ $unreadCount = count($notifications);
                       <div class="grow">
                         <div class="flex items-start justify-between mb-2">
                           <h6 class="text-sm font-bold text-gray-800 leading-tight">
+                            <?php if (!$notification['is_read']): ?>
+                            <span class="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></span>
+                            <?php endif; ?>
                             <?php echo htmlspecialchars($notification['title']); ?>
                           </h6>
                           <span class="text-xs text-gray-400 whitespace-nowrap ml-3 bg-gray-100 px-2 py-1 rounded-md">
@@ -347,7 +529,7 @@ $unreadCount = count($notifications);
             <?php if (!empty($notifications)): ?>
             <div class="notification-footer text-center py-4 border-t border-gray-200 bg-white">
               <div class="flex items-center justify-center gap-4">
-                <button onclick="markAllAsRead()" class="mark-read-btn">
+                <button onclick="markAllAsRead(event)" class="mark-read-btn" <?php echo $unreadCount == 0 ? 'disabled' : ''; ?>>
                   <i data-feather="check-double" class="w-4 h-4"></i>
                   Mark All as Read
                 </button>
@@ -531,25 +713,26 @@ $unreadCount = count($notifications);
   transition: all 0.3s ease;
 }
 
-.mark-read-btn:hover {
+.mark-read-btn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-.mark-read-btn:active {
+.mark-read-btn:active:not(:disabled) {
   transform: translateY(0);
 }
 
 .mark-read-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
 }
 
 .mark-read-btn i {
   transition: transform 0.3s ease;
 }
 
-.mark-read-btn:hover i {
+.mark-read-btn:hover:not(:disabled) i {
   transform: scale(1.1);
 }
 
@@ -646,8 +829,10 @@ $unreadCount = count($notifications);
 }
 
 /* Smooth dropdown animations */
-.dropdown-menu {
-  animation: slideDown 0.3s ease-out;
+.dropdown-menu { display: none; 
+}
+
+.dropdown-menu.show { display: block; 
 }
 
 @keyframes slideDown {
@@ -694,6 +879,15 @@ $unreadCount = count($notifications);
   to { opacity: 1; }
 }
 
+/* Spinning loader animation */
+.icon-loader {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Responsive Design */
 @media (max-width: 640px) {
   .notification-dropdown {
@@ -730,9 +924,74 @@ $unreadCount = count($notifications);
 </style>
 
 <script>
-// Mark all notifications as read
-function markAllAsRead() {
-  const btn = event.target.closest('button');
+// ==================== FIXED JAVASCRIPT ====================
+
+// Wait for page to fully load before initializing
+window.addEventListener('load', function() {
+  // Force close all dropdowns on page load with a delay
+  setTimeout(function() {
+    const allDropdowns = document.querySelectorAll('.dropdown-menu');
+    const allToggles = document.querySelectorAll('.dropdown-toggle');
+    
+    allDropdowns.forEach(dropdown => {
+      dropdown.classList.remove('show');
+      dropdown.style.display = '';
+    });
+    
+    allToggles.forEach(toggle => {
+      toggle.setAttribute('aria-expanded', 'false');
+    });
+  }, 100);
+});
+
+// Prevent any dropdown from opening on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Disable all dropdowns temporarily
+  const dropdowns = document.querySelectorAll('.dropdown-toggle');
+  dropdowns.forEach(toggle => {
+    toggle.setAttribute('aria-expanded', 'false');
+  });
+  
+  // Remove show class from any dropdown menus
+  const dropdownMenus = document.querySelectorAll('.dropdown-menu');
+  dropdownMenus.forEach(menu => {
+    menu.classList.remove('show');
+  });
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+  const allDropdowns = document.querySelectorAll('.dropdown');
+  
+  allDropdowns.forEach(dropdownContainer => {
+    if (!dropdownContainer.contains(event.target)) {
+      const dropdown = dropdownContainer.querySelector('.dropdown-menu');
+      const toggle = dropdownContainer.querySelector('.dropdown-toggle');
+      
+      if (dropdown && dropdown.classList.contains('show')) {
+        dropdown.classList.remove('show');
+        if (toggle) {
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      }
+    }
+  });
+});
+
+// Mark all notifications as read - UPDATED: Keeps notifications visible, only removes badge
+function markAllAsRead(event) {
+  // Prevent default behavior
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
+  const btn = event ? event.target.closest('button') : null;
+  if (!btn) {
+    console.error('Button not found');
+    return;
+  }
+  
   const originalHTML = btn.innerHTML;
   
   // Show loading state
@@ -761,22 +1020,45 @@ function markAllAsRead() {
         feather.replace();
       }
       
-      // Animate notifications out
-      const notifications = document.querySelectorAll('.notification-card');
-      notifications.forEach((notification, index) => {
-        setTimeout(() => {
-          notification.style.transition = 'all 0.4s ease-out';
-          notification.style.opacity = '0';
-          notification.style.transform = 'translateX(-20px)';
-        }, index * 50);
+      // Remove unread indicators (blue dots) from notifications
+      const unreadDots = document.querySelectorAll('.notification-card .animate-pulse');
+      unreadDots.forEach(dot => {
+        dot.style.transition = 'opacity 0.3s ease';
+        dot.style.opacity = '0';
+        setTimeout(() => dot.remove(), 300);
       });
       
-      // Reload page after animation
+      // Fade out read notifications slightly
+      const notifications = document.querySelectorAll('.notification-card');
+      notifications.forEach(notification => {
+        notification.style.transition = 'opacity 0.3s ease';
+        notification.style.opacity = '0.7';
+      });
+      
+      // Remove the badge with animation
+      const badge = document.querySelector('.notification-badge');
+      if (badge) {
+        badge.style.transition = 'all 0.3s ease';
+        badge.style.transform = 'scale(0)';
+        badge.style.opacity = '0';
+        setTimeout(() => badge.remove(), 300);
+      }
+      
+      // Update the "New" count in header
+      const newCountBadge = document.querySelector('.notification-header .bg-white');
+      if (newCountBadge) {
+        newCountBadge.style.transition = 'all 0.3s ease';
+        newCountBadge.style.transform = 'scale(0)';
+        newCountBadge.style.opacity = '0';
+        setTimeout(() => newCountBadge.remove(), 300);
+      }
+      
+      // Reload page after a short delay to update state
       setTimeout(() => {
         location.reload();
-      }, notifications.length * 50 + 500);
+      }, 1500);
     } else {
-      alert('❌ Error: ' + data.message);
+      alert('❌ Error: ' + (data.message || 'Unknown error occurred'));
       btn.disabled = false;
       btn.innerHTML = originalHTML;
       if (typeof feather !== 'undefined') {
@@ -797,19 +1079,12 @@ function markAllAsRead() {
 
 // Auto-refresh notification count every 60 seconds
 setInterval(function() {
-  // Add AJAX call here to check for new notifications
+  // You can add AJAX call here to check for new notifications
   // Example: fetch('check_notifications.php').then(...)
 }, 60000);
 
-// Spinning loader animation
-const style = document.createElement('style');
-style.textContent = `
-  .icon-loader {
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-`;
-document.head.appendChild(style);
+// Reinitialize feather icons after page loads
+if (typeof feather !== 'undefined') {
+  feather.replace();
+}
 </script>
