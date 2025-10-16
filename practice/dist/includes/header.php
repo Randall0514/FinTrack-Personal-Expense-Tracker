@@ -355,7 +355,7 @@ foreach ($expenses as $expense) {
         $timeDiff = $currentTime - $expenseTime;
         
         // Calculate time ago
-        $timeAgo = '';
+        $timeAgo = ''; 
         if ($timeDiff < 3600) {
             $minutes = floor($timeDiff / 60);
             $timeAgo = $minutes <= 1 ? 'Just now' : $minutes . ' min ago';

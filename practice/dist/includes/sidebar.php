@@ -55,120 +55,409 @@ $userData['fullname'] = $userData['fullname'] ?? 'User';
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 
-<!-- [ Sidebar Menu ] start -->
-<nav class="pc-sidebar bg-white text-gray-800 w-64 flex flex-col shadow-lg">
-  <div class="navbar-wrapper h-full flex flex-col">
-    <!-- Brand -->
-    <div class="p-6 border-b border-gray-200">
-      <a href="../admin/dashboard.php" class="flex items-center gap-3">
-        <!-- Logo Image -->
-        <img src="../assets/images/Logo.png" alt="FinTrack Logo" class="w-12 h-12 rounded-lg object-cover shadow-md" />
+<style>
+/* Enhanced Sidebar Styling */
+.pc-sidebar {
+  background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%) !important;
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.08) !important;
+}
 
-        <!-- Text Section -->
-        <div>
-          <h1 class="text-xl font-bold text-gray-800">FinTrack</h1>
-          <p class="text-xs text-gray-500">Expense Tracker</p>
+/* Brand Section with Gradient Background */
+.sidebar-brand {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1.5rem;
+  border-bottom: none !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-brand::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.logo-container {
+  position: relative;
+  z-index: 1;
+}
+
+.logo-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  transition: transform 0.3s ease;
+}
+
+.logo-link:hover {
+  transform: translateX(5px);
+}
+
+.logo-image {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.logo-link:hover .logo-image {
+  transform: rotate(5deg) scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.logo-text h1 {
+  color: white !important;
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.5px;
+}
+
+.logo-text p {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 0.75rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* User Profile Card */
+.user-profile-card {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 2px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  z-index: 1;
+}
+
+.user-profile-wrapper {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.user-profile-wrapper:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.user-avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.user-profile-wrapper:hover .user-avatar {
+  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  color: white !important;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.user-email {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 0.7rem;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.user-status {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  animation: blink 2s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.status-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Navigation Section */
+.nav-section {
+  flex: 1;
+  padding: 0.75rem;
+  overflow-y: auto;
+  margin-top: 1rem;
+}
+
+.nav-section::-webkit-scrollbar {
+  width: 6px;
+}
+
+.nav-section::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.nav-section::-webkit-scrollbar-thumb {
+  background: rgba(102, 126, 234, 0.3);
+  border-radius: 10px;
+}
+
+.nav-section::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 126, 234, 0.5);
+}
+
+.nav-label {
+  color: #667eea !important;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 0 0.75rem;
+  margin: 1.5rem 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-label::before {
+  content: '';
+  width: 20px;
+  height: 2px;
+  background: linear-gradient(90deg, #667eea, transparent);
+}
+
+/* Menu Items */
+.menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  margin-bottom: 0.375rem;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.menu-item:hover::before {
+  left: 100%;
+}
+
+.menu-item:not(.active) {
+  color: #4b5563;
+  background: white;
+  border-color: #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.menu-item:not(.active):hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white !important;
+  border-color: #667eea;
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.menu-item.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white !important;
+  border-color: #667eea;
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+  transform: translateX(3px);
+}
+
+.menu-item i {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.menu-item span {
+  flex: 1;
+}
+
+/* Logout Button Special Style */
+.menu-item.logout-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white !important;
+  border-color: #ef4444;
+  margin-top: 0.5rem;
+}
+
+.menu-item.logout-btn:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateX(5px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .pc-sidebar {
+    width: 260px;
+  }
+  
+  .user-name {
+    font-size: 0.85rem;
+  }
+  
+  .user-email {
+    font-size: 0.65rem;
+  }
+}
+</style>
+
+<!-- [ Sidebar Menu ] start -->
+<nav class="pc-sidebar">
+  <div class="navbar-wrapper h-full flex flex-col">
+    <!-- Brand Section -->
+    <div class="sidebar-brand">
+      <div class="logo-container">
+        <a href="../admin/dashboard.php" class="logo-link">
+          <img src="../assets/images/Logo.png" alt="FinTrack Logo" class="logo-image" />
+          <div class="logo-text">
+            <h1>FinTrack</h1>
+            <p>Expense Tracker</p>
+          </div>
+        </a>
+        
+        <!-- User Profile Card -->
+        <div class="user-profile-card">
+          <div class="user-profile-wrapper">
+            <img src="<?php echo htmlspecialchars($userData['profile_picture']); ?>" alt="Profile" class="user-avatar" />
+            <div class="user-info">
+              <p class="user-name"><?php echo htmlspecialchars($userData['fullname']); ?></p>
+              <p class="user-email"><?php echo htmlspecialchars($user['email']); ?></p>
+              <div class="user-status">
+                <span class="status-indicator"></span>
+                <span class="status-text">Online</span>
+              </div>
+            </div>
+          </div>
         </div>
-      </a>
+      </div>
     </div>
 
-    <!-- Navigation -->
-    <div class="flex-1 px-3 overflow-y-auto mt-4">
-      <p class="text-xs text-gray-500 px-3 mb-2 font-semibold">NAVIGATION</p>
+    <!-- Navigation Section -->
+    <div class="nav-section">
+      <p class="nav-label">📊 Navigation</p>
 
-      <ul class="pc-navbar">
+      <ul class="pc-navbar" style="list-style: none; margin: 0; padding: 0;">
         <li>
-          <a href="../admin/dashboard.php"
-             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-all border <?php echo ($current_page == 'dashboard.php') ? 'text-white border-purple-500' : 'border-gray-200 hover:text-white text-gray-700'; ?>"
-             style="<?php echo ($current_page == 'dashboard.php') ? 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);' : 'transition: all 0.3s ease;'; ?>"
-             <?php if($current_page != 'dashboard.php'): ?>
-             onmouseover="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.borderColor='#667eea';"
-             onmouseout="this.style.background=''; this.style.borderColor='#d1d5db';"
-             <?php endif; ?>>
+          <a href="../admin/dashboard.php" class="menu-item <?php echo ($current_page == 'dashboard.php') ? 'active' : ''; ?>">
             <i data-feather="home" width="20"></i>
             <span>Dashboard</span>
           </a>
         </li>
 
         <li>
-          <a href="../admin/manage_expenses.php"
-             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-all border <?php echo ($current_page == 'manage_expenses.php') ? 'text-white border-purple-500' : 'border-gray-200 hover:text-white text-gray-700'; ?>"
-             style="<?php echo ($current_page == 'manage_expenses.php') ? 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);' : 'transition: all 0.3s ease;'; ?>"
-             <?php if($current_page != 'manage_expenses.php'): ?>
-             onmouseover="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.borderColor='#667eea';"
-             onmouseout="this.style.background=''; this.style.borderColor='#d1d5db';"
-             <?php endif; ?>>
-            <i data-feather="dollar-sign" width="20"></i>
+          <a href="../admin/manage_expenses.php" class="menu-item <?php echo ($current_page == 'manage_expenses.php') ? 'active' : ''; ?>">
+            <i data-feather="credit-card" width="20"></i>
             <span>Manage Expenses</span>
           </a>
         </li>
 
         <li>
-          <a href="../admin/summary_report.php"
-             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-all border <?php echo ($current_page == 'summary_report.php') ? 'text-white border-purple-500' : 'border-gray-200 hover:text-white text-gray-700'; ?>"
-             style="<?php echo ($current_page == 'summary_report.php') ? 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);' : 'transition: all 0.3s ease;'; ?>"
-             <?php if($current_page != 'summary_report.php'): ?>
-             onmouseover="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.borderColor='#667eea';"
-             onmouseout="this.style.background=''; this.style.borderColor='#d1d5db';"
-             <?php endif; ?>>
+          <a href="../admin/summary_report.php" class="menu-item <?php echo ($current_page == 'summary_report.php') ? 'active' : ''; ?>">
             <i data-feather="pie-chart" width="20"></i>
             <span>Reports & Summary</span>
           </a>
         </li>
 
         <li>
-          <a href="../admin/categories.php"
-             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-all border <?php echo ($current_page == 'categories.php') ? 'text-white border-purple-500' : 'border-gray-200 hover:text-white text-gray-700'; ?>"
-             style="<?php echo ($current_page == 'categories.php') ? 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);' : 'transition: all 0.3s ease;'; ?>"
-             <?php if($current_page != 'categories.php'): ?>
-             onmouseover="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.borderColor='#667eea';"
-             onmouseout="this.style.background=''; this.style.borderColor='#d1d5db';"
-             <?php endif; ?>>
-            <i data-feather="file-text" width="20"></i>
-            <span>Categories</span>
+          <a href="../admin/FinAI.php" class="menu-item <?php echo ($current_page == 'categories.php') ? 'active' : ''; ?>">
+            <i data-feather="cpu" width="20"></i>
+            <span>FinAI</span>
           </a>
         </li>
       </ul>
 
-      <!-- Settings -->
-      <p class="text-xs text-gray-500 px-3 mt-6 mb-2 font-semibold">OTHERS</p>
-      <ul>
+      <p class="nav-label">⚙️ Settings</p>
+      <ul style="list-style: none; margin: 0; padding: 0;">
         <li>
-          <a href="../admin/settings.php"
-             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-all border <?php echo ($current_page == 'settings.php') ? 'text-white border-purple-500' : 'border-gray-200 hover:text-white text-gray-700'; ?>"
-             style="<?php echo ($current_page == 'settings.php') ? 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);' : 'transition: all 0.3s ease;'; ?>"
-             <?php if($current_page != 'settings.php'): ?>
-             onmouseover="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.borderColor='#667eea';"
-             onmouseout="this.style.background=''; this.style.borderColor='#d1d5db';"
-             <?php endif; ?>>
+          <a href="../admin/settings.php" class="menu-item <?php echo ($current_page == 'settings.php') ? 'active' : ''; ?>">
             <i data-feather="settings" width="20"></i>
             <span>Settings</span>
           </a>
         </li>
-      </ul>
 
-      <!-- Others -->
-      <p class="text-xs text-gray-500 px-3 mt-6 mb-2 font-semibold">SETTINGS</p>
-      <ul>
         <li>
-          <a href="#!" onclick="return alert('About this System\n\nSystem Name: FinTrack\nDeveloper: (Student Name)\nContact No: (Contact No.)\nEmail: (Email)\n\n© 2025 Software Solutions. All rights reserved.');"
-             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-all border border-gray-200 hover:text-white text-gray-700"
-             style="transition: all 0.3s ease;"
-             onmouseover="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.borderColor='#667eea';"
-             onmouseout="this.style.background=''; this.style.borderColor='#d1d5db';">
+          <a href="#!" onclick="return alert('About this System\n\nSystem Name: FinTrack\nDeveloper: (Student Name)\nContact No: (Contact No.)\nEmail: (Email)\n\n© 2025 Software Solutions. All rights reserved.');" class="menu-item">
             <i data-feather="info" width="20"></i>
             <span>About</span>
           </a>
         </li>
 
         <li>
-          <a href="logout.php" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-all border border-gray-200 hover:text-white text-gray-700"
-             style="transition: all 0.3s ease;"
-             onmouseover="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.borderColor='#667eea';"
-             onmouseout="this.style.background=''; this.style.borderColor='#d1d5db';"
-             onclick="return confirm('Do you really want to Log-Out?')">
+          <a href="logout.php" class="menu-item logout-btn" onclick="return confirm('Do you really want to Log-Out?')">
             <i data-feather="log-out" width="20"></i>
-            <span>Log-Out</span>
+            <span>Log Out</span>
           </a>
         </li>
       </ul>

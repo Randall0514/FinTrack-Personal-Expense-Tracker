@@ -58,9 +58,9 @@ try {
     $monthlyBudget = 10000;
 }
 
-// ✅ Fetch only THIS user's expenses
+// ✅ Fetch only THIS user's ACTIVE (NON-ARCHIVED) expenses
 $expenses = [];
-$stmt = $conn->prepare("SELECT * FROM expenses WHERE user_id = ? ORDER BY date DESC");
+$stmt = $conn->prepare("SELECT * FROM expenses WHERE user_id = ? AND archived = 0 ORDER BY date DESC");
 if ($stmt) {
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
@@ -74,7 +74,7 @@ if ($stmt) {
     $stmt->close();
 }
 
-// Calculate statistics
+// Calculate statistics - ONLY uses non-archived expenses now
 $dailySpending = 0;
 $weeklySpending = 0;
 $monthlySpending = 0;
@@ -85,6 +85,7 @@ $currentMonth = date('Y-m');
 $weekStart = date('Y-m-d', strtotime('monday this week'));
 $weekEnd = date('Y-m-d', strtotime('sunday this week'));
 
+// Loop through ONLY non-archived expenses
 foreach ($expenses as $expense) {
     $expenseDate = $expense['date'];
     $amount = floatval($expense['amount']);
@@ -302,7 +303,53 @@ $categories = [
       margin-bottom: 10px;
     }
 
-    .budget-card h3 { color: white !important; }
+    .budget-card h3 { 
+      color: white !important; 
+      margin-bottom: 15px;
+    }
+
+    /* NEW: Budget Amount Labels */
+    .budget-amounts {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      gap: 15px;
+    }
+
+    .budget-amount-item {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 12px;
+      border-radius: 10px;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .budget-label {
+      display: block;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .budget-value {
+      display: block;
+      font-size: 1.1rem;
+      color: white;
+      font-weight: 700;
+    }
+
+    .budget-value.spending {
+      color: #fbbf24;
+    }
+
+    .budget-value.limit {
+      color: #fbbf24;
+    }
 
     .progress-bar-wrapper {
       background: rgba(255, 255, 255, 0.2);
@@ -317,6 +364,25 @@ $categories = [
       background: white;
       border-radius: 10px;
       transition: width 0.5s ease;
+    }
+
+    .budget-summary {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .budget-summary-text {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.95);
+    }
+
+    .budget-summary-text strong {
+      font-weight: 700;
+      color: white;
     }
 
     /* Filter Section */
@@ -460,6 +526,11 @@ $categories = [
 
     @media (max-width: 768px) {
       .col-span-6, .col-span-4, .col-span-8 { grid-column: span 12; }
+      
+      .budget-amounts {
+        flex-direction: column;
+        gap: 10px;
+      }
     }
 
     @keyframes slideInRight {
@@ -538,66 +609,99 @@ $categories = [
       <div class="dashboard-grid">
         <!-- Budget Tracking Cards -->
         <div class="col-span-4">
-          <div class="budget-card">
-            <h6>💰 Daily Budget</h6>
-            <h3>₱ <?php echo number_format($dailySpending, 2); ?> / ₱ <?php echo number_format($dailyBudget, 2); ?></h3>
-            <div class="progress-bar-wrapper">
-              <div class="progress-bar-fill" style="width: <?php echo $dailyPercentage; ?>%"></div>
+          <div class="budget-card" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+            <h6>📆 Monthly Budget</h6>
+            
+            <!-- NEW: Labeled Budget Amounts -->
+            <div class="budget-amounts">
+              <div class="budget-amount-item">
+                <span class="budget-label">Expenses</span>
+                <span class="budget-value spending">₱ <?php echo number_format($monthlySpending, 2); ?></span>
+              </div>
+              <div class="budget-amount-item">
+                <span class="budget-label">Budget Limit</span>
+                <span class="budget-value limit">₱ <?php echo number_format($monthlyBudget, 2); ?></span>
+              </div>
             </div>
-            <p style="margin-top: 10px; font-size: 0.9rem;">
-              <?php echo number_format($dailyPercentage, 1); ?>% used
-              • ₱ <?php echo number_format(max(0, $dailyBudget - $dailySpending), 2); ?> remaining
-            </p>
+            
+            <div class="progress-bar-wrapper">
+              <div class="progress-bar-fill" style="width: <?php echo $monthlyPercentage; ?>%"></div>
+            </div>
+            
+            <div class="budget-summary">
+              <span class="budget-summary-text">
+                <strong><?php echo number_format($monthlyPercentage, 1); ?>%</strong> used
+              </span>
+              <span class="budget-summary-text">
+                <strong>₱ <?php echo number_format(max(0, $monthlyBudget - $monthlySpending), 2); ?></strong> left
+              </span>
+            </div>
           </div>
         </div>
 
         <div class="col-span-4">
           <div class="budget-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
             <h6>📅 Weekly Budget</h6>
-            <h3>₱ <?php echo number_format($weeklySpending, 2); ?> / ₱ <?php echo number_format($weeklyBudget, 2); ?></h3>
+            
+            <!-- NEW: Labeled Budget Amounts -->
+            <div class="budget-amounts">
+              <div class="budget-amount-item">
+                <span class="budget-label">Expenses</span>
+                <span class="budget-value spending">₱ <?php echo number_format($weeklySpending, 2); ?></span>
+              </div>
+              <div class="budget-amount-item">
+                <span class="budget-label">Budget Limit</span>
+                <span class="budget-value limit">₱ <?php echo number_format($weeklyBudget, 2); ?></span>
+              </div>
+            </div>
+            
             <div class="progress-bar-wrapper">
               <div class="progress-bar-fill" style="width: <?php echo $weeklyPercentage; ?>%"></div>
             </div>
-            <p style="margin-top: 10px; font-size: 0.9rem;">
-              <?php echo number_format($weeklyPercentage, 1); ?>% used
-              • ₱ <?php echo number_format(max(0, $weeklyBudget - $weeklySpending), 2); ?> remaining
-            </p>
+            
+            <div class="budget-summary">
+              <span class="budget-summary-text">
+                <strong><?php echo number_format($weeklyPercentage, 1); ?>%</strong> used
+              </span>
+              <span class="budget-summary-text">
+                <strong>₱ <?php echo number_format(max(0, $weeklyBudget - $weeklySpending), 2); ?></strong> left
+              </span>
+            </div>
           </div>
         </div>
 
         <div class="col-span-4">
-          <div class="budget-card" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
-            <h6>📆 Monthly Budget</h6>
-            <h3>₱ <?php echo number_format($monthlySpending, 2); ?> / ₱ <?php echo number_format($monthlyBudget, 2); ?></h3>
-            <div class="progress-bar-wrapper">
-              <div class="progress-bar-fill" style="width: <?php echo $monthlyPercentage; ?>%"></div>
+          <div class="budget-card">
+            <h6>💰 Daily Budget</h6>
+            
+            <!-- NEW: Labeled Budget Amounts -->
+            <div class="budget-amounts">
+              <div class="budget-amount-item">
+                <span class="budget-label">Expenses</span>
+                <span class="budget-value spending">₱ <?php echo number_format($dailySpending, 2); ?></span>
+              </div>
+              <div class="budget-amount-item">
+                <span class="budget-label">Budget Limit</span>
+                <span class="budget-value limit">₱ <?php echo number_format($dailyBudget, 2); ?></span>
+              </div>
             </div>
-            <p style="margin-top: 10px; font-size: 0.9rem;">
-              <?php echo number_format($monthlyPercentage, 1); ?>% used
-              • ₱ <?php echo number_format(max(0, $monthlyBudget - $monthlySpending), 2); ?> remaining
-            </p>
+            
+            <div class="progress-bar-wrapper">
+              <div class="progress-bar-fill" style="width: <?php echo $dailyPercentage; ?>%"></div>
+            </div>
+            
+            <div class="budget-summary">
+              <span class="budget-summary-text">
+                <strong><?php echo number_format($dailyPercentage, 1); ?>%</strong> used
+              </span>
+              <span class="budget-summary-text">
+                <strong>₱ <?php echo number_format(max(0, $dailyBudget - $dailySpending), 2); ?></strong> left
+              </span>
+            </div>
           </div>
         </div>
 
-        <!-- Filtering Section -->
-        <div class="col-span-12">
-          <div class="filter-section">
-            <select id="categoryFilter">
-              <option value="">All Categories</option>
-              <?php foreach ($categories as $cat): ?>
-                <option value="<?php echo $cat; ?>"><?php echo $cat; ?></option>
-              <?php endforeach; ?>
-            </select>
-            <input type="date" id="dateFromFilter" placeholder="From Date">
-            <input type="date" id="dateToFilter" placeholder="To Date">
-            <button class="filter-btn" onclick="applyFilters()">
-              <i class="feather icon-filter"></i> Apply Filters
-            </button>
-            <button class="filter-btn" onclick="resetFilters()">
-              <i class="feather icon-x"></i> Reset
-            </button>
-          </div>
-        </div>
+        
 
         <!-- Data Visualization - Category Breakdown Chart -->
         <div class="col-span-8">

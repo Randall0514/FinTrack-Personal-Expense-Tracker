@@ -36,8 +36,8 @@ $user_id = $user['id'];
  * Returns totals and totals-by-category between optional dates for the current user only.
  */
 function generateSummaryReport($conn, $user_id, $startDate = null, $endDate = null) {
-    // ✅ Always filter by user_id
-    $where = "WHERE user_id = " . intval($user_id);
+    // ✅ Always filter by user_id AND exclude archived expenses
+    $where = "WHERE user_id = " . intval($user_id) . " AND archived = 0";
     
     if ($startDate) {
         $start = $conn->real_escape_string($startDate);

@@ -51,8 +51,8 @@ if (isset($_POST['add_expense'])) {
     $description = $_POST['description'];
     $payment_method = $_POST['payment_method'];
 
-    // ✅ Include user_id in the INSERT
-    $stmt = $conn->prepare("INSERT INTO expenses (user_id, category, amount, date, description, payment_method) VALUES (?, ?, ?, ?, ?, ?)");
+    // ✅ Include user_id in the INSERT and set archived to 0 by default
+    $stmt = $conn->prepare("INSERT INTO expenses (user_id, category, amount, date, description, payment_method, archived) VALUES (?, ?, ?, ?, ?, ?, 0)");
     $stmt->bind_param("isdsss", $user_id, $category, $amount, $date, $description, $payment_method);
     
     if ($stmt->execute()) {
@@ -78,7 +78,7 @@ if (isset($_POST['edit_expense'])) {
             date=?,
             description=?,
             payment_method=?
-            WHERE id=? AND user_id=?");
+            WHERE id=? AND user_id=? AND archived=0");
     $stmt->bind_param("sdsssii", $category, $amount, $date, $description, $payment_method, $id, $user_id);
     
     if ($stmt->execute()) {
@@ -88,24 +88,28 @@ if (isset($_POST['edit_expense'])) {
     $stmt->close();
 }
 
-// ---------------------- DELETE EXPENSE ----------------------
-if (isset($_GET['delete'])) {
-    $id = $_GET['delete'];
-    
-    // ✅ Verify the expense belongs to this user before deleting
-    $stmt = $conn->prepare("DELETE FROM expenses WHERE id=? AND user_id=?");
+// ---------------------- ARCHIVE EXPENSE ----------------------
+if (isset($_GET['archive'])) {
+    $id = intval($_GET['archive']);
+
+    // ✅ Verify the expense belongs to this user before archiving
+    $stmt = $conn->prepare("UPDATE expenses SET archived = 1 WHERE id=? AND user_id=? AND archived=0");
     $stmt->bind_param("ii", $id, $user_id);
-    
-    if ($stmt->execute()) {
-        header("Location: manage_expenses.php?deleted=1");
+
+    if ($stmt->execute() && $stmt->affected_rows > 0) {
+        header("Location: manage_expenses.php?archived=1");
+        exit;
+    } else {
+        header("Location: manage_expenses.php?error=archive_failed");
         exit;
     }
     $stmt->close();
 }
 
-// ---------------------- FETCH ONLY THIS USER'S EXPENSES ----------------------
+
+// ---------------------- FETCH ONLY THIS USER'S ACTIVE (NON-ARCHIVED) EXPENSES ----------------------
 $expenses = [];
-$stmt = $conn->prepare("SELECT * FROM expenses WHERE user_id = ? ORDER BY date DESC");
+$stmt = $conn->prepare("SELECT * FROM expenses WHERE user_id = ? AND archived = 0 ORDER BY date DESC");
 if ($stmt) {
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
@@ -122,7 +126,7 @@ if ($stmt) {
 $totalExpenses = array_sum(array_column($expenses, 'amount'));
 $expenseCount  = count($expenses);
 
-// Calculate This Month's expenses
+// Calculate This Month's expenses (only active, non-archived)
 $thisMonthExpenses = 0;
 $currentMonth = date('Y-m');
 foreach ($expenses as $expense) {
@@ -226,6 +230,11 @@ body {
 
 .alert-info {
     background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     color: white;
 }
 
@@ -385,6 +394,18 @@ body {
 .btn-info:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+}
+
+.btn-outline-warning {
+    background: transparent;
+    color: white;
+    border: 2px solid white;
+}
+
+.btn-outline-warning:hover {
+    background: white;
+    color: #764ba2;
+    transform: translateY(-2px);
 }
 
 .btn-sm {
@@ -658,35 +679,46 @@ button[onclick*="closeModal"]:hover {
                 </div>
             <?php endif; ?>
 
-            <?php if (isset($_GET['deleted'])): ?>
-                <div class="alert alert-info">
-                    <i class="feather icon-trash-2" style="font-size: 1.5rem;"></i>
-                    <strong>Expense deleted successfully!</strong>
+            <?php if (isset($_GET['archived'])): ?>
+                <div class="alert alert-warning">
+                    <i class="feather icon-archive" style="font-size: 1.5rem;"></i>
+                    <strong>Expense archived successfully!</strong>
+                </div>
+            <?php endif; ?>
+
+            <?php if (isset($_GET['error']) && $_GET['error'] === 'archive_failed'): ?>
+                <div class="alert alert-danger">
+                    <i class="feather icon-x-circle" style="font-size: 1.5rem;"></i>
+                    <strong>Failed to archive expense. Please try again.</strong>
                 </div>
             <?php endif; ?>
 
             <!-- Summary Cards -->
             <div class="summary-cards">
                 <div class="summary-card">
-                    <h6>Total Expenses</h6>
+                    <h6>Total Activities</h6>
                     <h3><?php echo $expenseCount; ?></h3>
                 </div>
                 <div class="summary-card" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
-                    <h6>Total Amount</h6>
+                    <h6>Total Expenses Amount</h6>
                     <h3>₱ <?php echo number_format($totalExpenses, 2); ?></h3>
                 </div>
                 <div class="summary-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
-                    <h6>This Month</h6>
+                    <h6>Total Expenses Amount This Month</h6>
                     <h3>₱ <?php echo number_format($thisMonthExpenses, 2); ?></h3>
                 </div>
             </div>
+            
+            <a href="view_archived.php" class="btn btn-outline-warning mb-3">
+                <i class="feather icon-archive"></i> View Archived Expenses
+            </a>
 
             <!-- Expense Table -->
             <div class="grid grid-cols-12 gap-x-6">
                 <div class="col-span-12">
                     <div class="card">
                         <div class="card-header">
-                            <h5>📝 Expense Records</h5>
+                            <h5>📝 Active Expense Records</h5>
                             <div class="search-filter-section">
                                 <input type="text" class="search-input" placeholder="Search expenses..." id="searchInput">
                                 <button type="button" class="btn btn-primary" onclick="openModal('addExpenseModal')">
@@ -728,8 +760,8 @@ button[onclick*="closeModal"]:hover {
                                                             onclick="openEditModal('<?php echo $expense['id']; ?>', '<?php echo htmlspecialchars($expense['category']); ?>', '<?php echo $expense['amount']; ?>', '<?php echo $expense['date']; ?>', '<?php echo htmlspecialchars($expense['description']); ?>', '<?php echo htmlspecialchars($expense['payment_method']); ?>')">
                                                             <i class="feather icon-edit"></i> Edit
                                                         </button>
-                                                       <a href="?delete=<?php echo $expense['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Delete this expense?');">
-                                                            <i class="feather icon-trash-2"></i> Delete
+                                                       <a href="?archive=<?php echo $expense['id']; ?>" class="btn btn-warning btn-sm" onclick="return confirm('Archive this expense? You can restore it later from the archived section.');">
+                                                            <i class="feather icon-archive"></i> Archive
                                                         </a>
                                                     </div>
                                                 </td>
@@ -737,7 +769,7 @@ button[onclick*="closeModal"]:hover {
                                             <?php endforeach; ?>
                                         <?php else: ?>
                                             <tr>
-                                                <td colspan="7" style="text-align:center; padding:20px;">No expenses found. Start adding your expenses!</td>
+                                                <td colspan="7" style="text-align:center; padding:20px;">No active expenses found. Start adding your expenses!</td>
                                             </tr>
                                         <?php endif; ?>
                                     </tbody>
