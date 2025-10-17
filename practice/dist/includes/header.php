@@ -390,32 +390,21 @@ $unreadCount = countUnreadNotifications($conn, $user_id, $notification_keys);
 ?>
 
 <!-- [ Header Topbar ] start -->
-<header class="pc-header">
-  <div class="header-wrapper flex max-sm:px-[15px] px-[25px] grow">
+<header class="pc-header" style="background: white; border-bottom: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
+  <div class="header-wrapper flex max-sm:px-[15px] px-[25px] grow items-center">
     <!-- [Mobile Media Block] start -->
     <div class="me-auto pc-mob-drp">
       <ul class="inline-flex *:min-h-header-height *:inline-flex *:items-center">
         <!-- ======= Menu collapse Icon ===== -->
         <li class="pc-h-item pc-sidebar-collapse max-lg:hidden lg:inline-flex">
-          <a href="#" class="pc-head-link ltr:!ml-0 rtl:!mr-0" id="sidebar-hide">
-            <i data-feather="menu"></i>
+          <a href="#" class="pc-head-link ltr:!ml-0 rtl:!mr-0 hover:bg-gray-100 rounded-lg transition-all" id="sidebar-hide">
+            <i data-feather="menu" class="text-gray-700"></i>
           </a>
         </li>
         <li class="pc-h-item pc-sidebar-popup lg:hidden">
-          <a href="#" class="pc-head-link ltr:!ml-0 rtl:!mr-0" id="mobile-collapse">
-            <i data-feather="menu"></i>
+          <a href="#" class="pc-head-link ltr:!ml-0 rtl:!mr-0 hover:bg-gray-100 rounded-lg transition-all" id="mobile-collapse">
+            <i data-feather="menu" class="text-gray-700"></i>
           </a>
-        </li>
-        <li class="dropdown pc-h-item">
-          <a class="pc-head-link dropdown-toggle me-0" data-pc-toggle="dropdown" href="#" role="button"
-            aria-haspopup="false" aria-expanded="false">
-            <i data-feather="search"></i>
-          </a>
-          <div class="dropdown-menu pc-h-dropdown drp-search">
-            <form class="px-2 py-1">
-              <input type="search" class="form-control !border-0 !shadow-none" placeholder="Search here. . ." />
-            </form>
-          </div>
         </li>
       </ul>
     </div>
@@ -540,27 +529,7 @@ $unreadCount = countUnreadNotifications($conn, $user_id, $notification_keys);
         </li>
         <!-- ================= END NOTIFICATION DROPDOWN ================= -->
 
-        <!-- dark/light mode toggle -->
-        <li class="dropdown pc-h-item">
-          <a class="pc-head-link dropdown-toggle me-0" data-pc-toggle="dropdown" href="#" role="button"
-            aria-haspopup="false" aria-expanded="false">
-            <i data-feather="sun"></i>
-          </a>
-          <div class="dropdown-menu dropdown-menu-end pc-h-dropdown">
-            <a href="#!" class="dropdown-item" onclick="layout_change('dark')">
-              <i data-feather="moon"></i>
-              <span>Dark</span>
-            </a>
-            <a href="#!" class="dropdown-item" onclick="layout_change('light')">
-              <i data-feather="sun"></i>
-              <span>Light</span>
-            </a>
-            <a href="#!" class="dropdown-item" onclick="layout_change_default()">
-              <i data-feather="settings"></i>
-              <span>Default</span>
-            </a>
-          </div>
-        </li>
+        
 
         <!-- User Profile Dropdown -->
         <li class="dropdown pc-h-item header-user-profile">

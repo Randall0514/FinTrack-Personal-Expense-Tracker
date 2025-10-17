@@ -91,7 +91,7 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Approval - FinTrack Admin</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -102,8 +102,9 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #f5f7fb;
-            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+            color: #2d3748;
+            line-height: 1.6;
         }
         
         .admin-container {
@@ -112,188 +113,340 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
         }
         
         .sidebar {
-            width: 250px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 280px;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 20px 0;
+            padding: 0;
             position: fixed;
             height: 100vh;
             overflow-y: auto;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
         }
         
         .logo {
-            padding: 0 20px;
-            margin-bottom: 30px;
-            font-size: 24px;
-            font-weight: 700;
-            text-align: center;
+            padding: 30px 25px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .logo span {
-            display: block;
+        .logo-text {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .logo-subtitle {
             font-size: 12px;
-            opacity: 0.8;
+            opacity: 0.75;
             margin-top: 5px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        .nav-section {
+            padding: 15px 25px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.6;
         }
         
         .nav-item {
-            padding: 12px 20px;
+            padding: 14px 25px;
             display: flex;
             align-items: center;
             cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 5px;
+            transition: all 0.3s ease;
+            margin: 2px 12px;
+            border-radius: 10px;
             text-decoration: none;
-            color: white;
+            color: rgba(255, 255, 255, 0.85);
+            position: relative;
         }
         
-        .nav-item:hover, .nav-item.active {
-            background-color: rgba(255, 255, 255, 0.1);
+        .nav-item:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: white;
+            transform: translateX(3px);
+        }
+        
+        .nav-item.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 24px;
+            background: white;
+            border-radius: 0 4px 4px 0;
         }
         
         .nav-item i {
-            margin-right: 10px;
+            margin-right: 12px;
             width: 20px;
             text-align: center;
+            font-size: 16px;
+        }
+        
+        .nav-item span {
+            font-size: 14px;
+            font-weight: 500;
         }
         
         .main-content {
             flex: 1;
-            margin-left: 250px;
-            padding: 20px;
+            margin-left: 280px;
+            padding: 30px 40px;
         }
         
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 40px;
+            padding: 25px 30px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
         }
         
         .page-title {
-            font-size: 24px;
+            font-size: 32px;
             font-weight: 700;
+            color: #1a202c;
+            letter-spacing: -0.5px;
+        }
+        
+        .page-subtitle {
+            font-size: 14px;
+            color: #718096;
+            margin-top: 5px;
+            font-weight: 400;
         }
         
         .user-info {
             display: flex;
             align-items: center;
+            gap: 15px;
         }
         
-        .user-info img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            margin-right: 10px;
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .user-details {
+            display: flex;
+            flex-direction: column;
         }
         
         .user-name {
             font-weight: 600;
+            font-size: 15px;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .user-email {
+            font-size: 13px;
+            color: #718096;
         }
         
         .admin-badge {
-            background-color: #764ba2;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            margin-left: 10px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
         
         .alert {
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 5px;
+            padding: 16px 20px;
+            margin-bottom: 25px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .alert-success {
-            background-color: #e6f7ee;
-            color: #0bab64;
-            border: 1px solid #0bab64;
+            background-color: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        
+        .alert-success i {
+            color: #38a169;
         }
         
         .alert-danger {
-            background-color: #ffebee;
-            color: #ff5252;
-            border: 1px solid #ff5252;
+            background-color: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+        
+        .alert-danger i {
+            color: #e53e3e;
         }
         
         .data-card {
-            background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
             margin-bottom: 30px;
+            border: 1px solid #f0f4f8;
         }
         
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f7fafc;
+        }
+        
+        .card-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
         }
         
         .card-title {
+            font-weight: 700;
+            font-size: 20px;
+            color: #1a202c;
+            letter-spacing: -0.3px;
+        }
+        
+        .card-count {
+            background: #f7fafc;
+            color: #4a5568;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
             font-weight: 600;
-            font-size: 18px;
+            margin-left: 10px;
         }
         
         .btn {
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s;
+            padding: 10px 20px;
+            border-radius: 10px;
             border: none;
-        }
-        
-        .btn-primary {
-            background-color: #667eea;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background-color: #5a6ecc;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
         
         .btn-success {
-            background-color: #0bab64;
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
             color: white;
+            box-shadow: 0 4px 12px rgba(67, 233, 123, 0.3);
         }
         
         .btn-success:hover {
-            background-color: #099a58;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(67, 233, 123, 0.4);
         }
         
         .btn-danger {
-            background-color: #ff5252;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
+            box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
         }
         
         .btn-danger:hover {
-            background-color: #ff0000;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+        }
+        
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 13px;
         }
         
         .user-card {
             display: flex;
             align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid #eee;
+            padding: 20px;
+            border-bottom: 1px solid #f0f4f8;
+            transition: all 0.2s ease;
         }
         
         .user-card:last-child {
             border-bottom: none;
         }
         
-        .user-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            margin-right: 15px;
+        .user-card:hover {
+            background-color: #f8fafc;
+            transform: translateX(4px);
+        }
+        
+        .user-avatar-card {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            margin-right: 18px;
+            border: 2px solid #e2e8f0;
         }
         
         .user-details {
@@ -302,60 +455,112 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
         
         .user-fullname {
             font-weight: 600;
-            margin-bottom: 5px;
+            font-size: 16px;
+            margin-bottom: 6px;
+            color: #1a202c;
         }
         
-        .user-email {
-            color: #666;
+        .user-email-text {
+            color: #718096;
             font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .user-meta {
+            font-size: 13px;
+            color: #a0aec0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .user-meta i {
+            font-size: 11px;
         }
         
         .user-actions {
             display: flex;
+            gap: 10px;
         }
         
         .user-actions form {
-            margin-left: 10px;
+            margin: 0;
         }
         
         .empty-state {
             text-align: center;
-            padding: 30px;
-            color: #666;
+            padding: 60px 30px;
+            color: #a0aec0;
         }
         
-        .empty-state i {
-            font-size: 48px;
-            margin-bottom: 15px;
-            color: #ddd;
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            margin: 0 auto 20px;
+            color: #cbd5e0;
+        }
+        
+        .empty-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #718096;
+            margin-bottom: 8px;
+        }
+        
+        .empty-subtext {
+            font-size: 14px;
+            color: #a0aec0;
         }
         
         @media (max-width: 768px) {
             .sidebar {
                 width: 70px;
-                padding: 20px 0;
             }
             
-            .logo {
-                padding: 0 10px;
-                font-size: 18px;
+            .main-content {
+                margin-left: 70px;
+                padding: 20px;
             }
             
-            .logo span, .nav-item span {
+            .logo-text, .logo-subtitle, .nav-item span, .nav-section {
                 display: none;
             }
             
+            .logo {
+                padding: 20px 0;
+                text-align: center;
+            }
+            
             .nav-item {
-                padding: 15px 0;
                 justify-content: center;
+                padding: 15px 0;
+                margin: 2px 8px;
             }
             
             .nav-item i {
                 margin-right: 0;
             }
             
-            .main-content {
-                margin-left: 70px;
+            .header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .user-card {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+            
+            .user-avatar-card {
+                margin-right: 0;
             }
         }
     </style>
@@ -364,8 +569,16 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
     <div class="admin-container">
         <div class="sidebar">
             <div class="logo">
-                FinTrack <span>Admin Panel</span>
+                <div class="logo-text">
+                    <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
+                    <div>
+                        FinTrack
+                        <div class="logo-subtitle">Admin Panel</div>
+                    </div>
+                </div>
             </div>
+            
+            <div class="nav-section">Main Menu</div>
             <a href="dashboard.php" class="nav-item">
                 <i class="fas fa-tachometer-alt"></i>
                 <span>Dashboard</span>
@@ -394,11 +607,17 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
         
         <div class="main-content">
             <div class="header">
-                <div class="page-title">User Approval</div>
+                <div>
+                    <div class="page-title">User Approval</div>
+                    <div class="page-subtitle">Review and approve pending user registrations</div>
+                </div>
                 <div class="user-info">
-                    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($fullname); ?>&background=764ba2&color=fff" alt="User Avatar">
-                    <div>
-                        <div class="user-name"><?php echo htmlspecialchars($fullname); ?> <span class="admin-badge">Admin</span></div>
+                    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($fullname); ?>&background=667eea&color=fff&bold=true" alt="User Avatar" class="user-avatar">
+                    <div class="user-details">
+                        <div class="user-name">
+                            <?php echo htmlspecialchars($fullname); ?>
+                            <span class="admin-badge">Admin</span>
+                        </div>
                         <div class="user-email"><?php echo htmlspecialchars($email); ?></div>
                     </div>
                 </div>
@@ -406,17 +625,29 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
             
             <?php if (!empty($message)): ?>
                 <div class="alert <?php echo strpos($message, 'Error') !== false ? 'alert-danger' : 'alert-success'; ?>">
+                    <i class="fas <?php echo strpos($message, 'Error') !== false ? 'fa-exclamation-circle' : 'fa-check-circle'; ?>"></i>
                     <?php echo $message; ?>
                 </div>
             <?php endif; ?>
             
             <div class="data-card">
                 <div class="card-header">
-                    <div class="card-title">Pending Approval (<?php echo count($pending_users); ?>)</div>
+                    <div class="card-title-wrapper">
+                        <div class="card-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                            <i class="fas fa-user-clock"></i>
+                        </div>
+                        <div>
+                            <div class="card-title">
+                                Pending Approval
+                                <span class="card-count"><?php echo count($pending_users); ?></span>
+                            </div>
+                            <div class="page-subtitle">Users waiting for approval</div>
+                        </div>
+                    </div>
                     <?php if (count($pending_users) > 0): ?>
                         <form method="POST">
                             <button type="submit" name="approve_all" class="btn btn-success">
-                                <i class="fas fa-check-circle"></i> Approve All
+                                <i class="fas fa-check-double"></i> Approve All
                             </button>
                         </form>
                     <?php endif; ?>
@@ -425,24 +656,25 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
                 <?php if (count($pending_users) > 0): ?>
                     <?php foreach ($pending_users as $user): ?>
                         <div class="user-card">
-                            <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($user['fullname']); ?>&background=764ba2&color=fff" alt="User Avatar" class="user-avatar">
+                            <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($user['fullname']); ?>&background=f093fb&color=fff&bold=true" alt="User Avatar" class="user-avatar-card">
                             <div class="user-details">
                                 <div class="user-fullname"><?php echo htmlspecialchars($user['fullname']); ?></div>
-                                <div class="user-email"><?php echo htmlspecialchars($user['email']); ?></div>
-                                <div style="font-size: 12px; color: #888; margin-top: 5px;">
-                                    Username: <?php echo htmlspecialchars($user['username']); ?>
+                                <div class="user-email-text"><?php echo htmlspecialchars($user['email']); ?></div>
+                                <div class="user-meta">
+                                    <i class="fas fa-user"></i>
+                                    <?php echo htmlspecialchars($user['username']); ?>
                                 </div>
                             </div>
                             <div class="user-actions">
                                 <form method="POST">
                                     <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
-                                    <button type="submit" name="approve_user" class="btn btn-success">
+                                    <button type="submit" name="approve_user" class="btn btn-success btn-sm">
                                         <i class="fas fa-check"></i> Approve
                                     </button>
                                 </form>
                                 <form method="POST">
                                     <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
-                                    <button type="submit" name="reject_user" class="btn btn-danger">
+                                    <button type="submit" name="reject_user" class="btn btn-danger btn-sm">
                                         <i class="fas fa-times"></i> Reject
                                     </button>
                                 </form>
@@ -451,32 +683,44 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
                     <?php endforeach; ?>
                 <?php else: ?>
                     <div class="empty-state">
-                        <i class="fas fa-check-circle"></i>
-                        <p>No pending users to approve</p>
+                        <div class="empty-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="empty-text">All Caught Up!</div>
+                        <div class="empty-subtext">No pending users to approve at the moment</div>
                     </div>
                 <?php endif; ?>
             </div>
             
             <div class="data-card">
                 <div class="card-header">
-                    <div class="card-title">Recently Approved Users</div>
+                    <div class="card-title-wrapper">
+                        <div class="card-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white;">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div>
+                            <div class="card-title">Recently Approved Users</div>
+                            <div class="page-subtitle">Latest approved user accounts</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <?php if (count($approved_users) > 0): ?>
                     <?php foreach ($approved_users as $user): ?>
                         <div class="user-card">
-                            <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($user['fullname']); ?>&background=0bab64&color=fff" alt="User Avatar" class="user-avatar">
+                            <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($user['fullname']); ?>&background=43e97b&color=fff&bold=true" alt="User Avatar" class="user-avatar-card">
                             <div class="user-details">
                                 <div class="user-fullname"><?php echo htmlspecialchars($user['fullname']); ?></div>
-                                <div class="user-email"><?php echo htmlspecialchars($user['email']); ?></div>
-                                <div style="font-size: 12px; color: #888; margin-top: 5px;">
-                                    Username: <?php echo htmlspecialchars($user['username']); ?>
+                                <div class="user-email-text"><?php echo htmlspecialchars($user['email']); ?></div>
+                                <div class="user-meta">
+                                    <i class="fas fa-user"></i>
+                                    <?php echo htmlspecialchars($user['username']); ?>
                                 </div>
                             </div>
                             <div class="user-actions">
                                 <form method="POST">
                                     <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
-                                    <button type="submit" name="reject_user" class="btn btn-danger">
+                                    <button type="submit" name="reject_user" class="btn btn-danger btn-sm">
                                         <i class="fas fa-ban"></i> Revoke
                                     </button>
                                 </form>
@@ -485,8 +729,11 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
                     <?php endforeach; ?>
                 <?php else: ?>
                     <div class="empty-state">
-                        <i class="fas fa-users"></i>
-                        <p>No approved users found</p>
+                        <div class="empty-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="empty-text">No Approved Users Yet</div>
+                        <div class="empty-subtext">Approved users will appear here</div>
                     </div>
                 <?php endif; ?>
             </div>

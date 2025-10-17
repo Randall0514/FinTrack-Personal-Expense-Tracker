@@ -344,7 +344,7 @@
             </div>
 
             <div class="forgot-password">
-              <a href="#">Forgot Password?</a>
+              <a href="forgot_password.php">Forgot Password?</a>
             </div>
 
             <button type="submit" name="submit" class="btn-login">Login</button>

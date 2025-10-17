@@ -38,13 +38,11 @@ require_once '../config/dbconfig_password.php';
 $message = '';
 $settings = [];
 
-// Get current settings
-$result = $conn->query("SELECT * FROM security_settings LIMIT 1");
-if ($result && $result->num_rows > 0) {
-    $settings = $result->fetch_assoc();
-} else {
-    // Create default settings if not exists
-    $conn->query("CREATE TABLE IF NOT EXISTS security_settings (
+// Check if security_settings table exists, if not create it
+$tableCheck = $conn->query("SHOW TABLES LIKE 'security_settings'");
+if ($tableCheck->num_rows == 0) {
+    // Create security_settings table
+    $createTable = "CREATE TABLE security_settings (
         id INT AUTO_INCREMENT PRIMARY KEY,
         password_min_length INT DEFAULT 8,
         require_special_chars BOOLEAN DEFAULT TRUE,
@@ -55,8 +53,22 @@ if ($result && $result->num_rows > 0) {
         session_timeout_minutes INT DEFAULT 60,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    )");
+    )";
     
+    if ($conn->query($createTable)) {
+        // Insert default settings
+        $conn->query("INSERT INTO security_settings 
+            (password_min_length, require_special_chars, require_numbers, require_uppercase, max_login_attempts, lockout_time_minutes, session_timeout_minutes) 
+            VALUES (8, 1, 1, 1, 5, 30, 60)");
+    }
+}
+
+// Get current settings
+$result = $conn->query("SELECT * FROM security_settings LIMIT 1");
+if ($result && $result->num_rows > 0) {
+    $settings = $result->fetch_assoc();
+} else {
+    // Insert default settings if table is empty
     $conn->query("INSERT INTO security_settings 
         (password_min_length, require_special_chars, require_numbers, require_uppercase, max_login_attempts, lockout_time_minutes, session_timeout_minutes) 
         VALUES (8, 1, 1, 1, 5, 30, 60)");
@@ -109,6 +121,21 @@ if (isset($_POST['update_settings'])) {
     }
 }
 
+// Check if login_attempts table exists, if not create it
+$tableCheck = $conn->query("SHOW TABLES LIKE 'login_attempts'");
+if ($tableCheck->num_rows == 0) {
+    $createTable = "CREATE TABLE login_attempts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(255) NOT NULL,
+        ip_address VARCHAR(45) NOT NULL,
+        success BOOLEAN DEFAULT FALSE,
+        attempt_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_attempt_time (attempt_time),
+        INDEX idx_success (success)
+    )";
+    $conn->query($createTable);
+}
+
 // Get login attempts
 $login_attempts = [];
 $result = $conn->query("SELECT * FROM login_attempts ORDER BY attempt_time DESC LIMIT 50");
@@ -116,15 +143,6 @@ if ($result) {
     while ($row = $result->fetch_assoc()) {
         $login_attempts[] = $row;
     }
-} else {
-    // Create login_attempts table if not exists
-    $conn->query("CREATE TABLE IF NOT EXISTS login_attempts (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(255) NOT NULL,
-        ip_address VARCHAR(45) NOT NULL,
-        success BOOLEAN DEFAULT FALSE,
-        attempt_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )");
 }
 ?>
 
@@ -455,7 +473,7 @@ if ($result) {
                 <i class="fas fa-user-tag"></i>
                 <span>Account Ownership</span>
             </a>
-            <a href="../dist/admin/logout.php" class="nav-item">
+            <a href="../logout.php" class="nav-item">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
             </a>

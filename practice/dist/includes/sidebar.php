@@ -56,19 +56,37 @@ $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 
 <style>
-/* Enhanced Sidebar Styling */
+/* Enhanced Sidebar Styling - Fixed to fit wrapper */
 .pc-sidebar {
   background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%) !important;
   box-shadow: 2px 0 20px rgba(0, 0, 0, 0.08) !important;
+  /* HEIGHT OPTIONS - Choose one: */
+  height: 100vh;        /* Full viewport height (default) */
+  /* height: 100%;      /* Full parent container height */
+  /* height: 90vh;      /* 90% of viewport height */
+  /* height: 800px;     /* Fixed pixel height */
+  /* max-height: 100vh; /* Maximum height with flexibility */
+  position: fixed;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.navbar-wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* Brand Section with Gradient Background */
 .sidebar-brand {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 1.5rem;
+  padding: 0.75rem;
   border-bottom: none !important;
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .sidebar-brand::before {
@@ -95,7 +113,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 .logo-link {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   text-decoration: none;
   transition: transform 0.3s ease;
 }
@@ -105,9 +123,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
 }
 
 .logo-image {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 12px;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 10px;
   object-fit: cover;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   border: 2px solid rgba(255, 255, 255, 0.3);
@@ -121,7 +139,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 .logo-text h1 {
   color: white !important;
-  font-size: 1.4rem;
+  font-size: 1rem;
   font-weight: 800;
   margin: 0;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
@@ -130,15 +148,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 .logo-text p {
   color: rgba(255, 255, 255, 0.9) !important;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   margin: 0;
   font-weight: 500;
 }
 
 /* User Profile Card */
 .user-profile-card {
-  margin-top: 1.25rem;
-  padding-top: 1.25rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
   border-top: 2px solid rgba(255, 255, 255, 0.2);
   position: relative;
   z-index: 1;
@@ -147,11 +165,11 @@ $current_page = basename($_SERVER['PHP_SELF']);
 .user-profile-wrapper {
   background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 0.875rem;
+  border-radius: 10px;
+  padding: 0.5rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   transition: all 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
@@ -163,13 +181,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
 }
 
 .user-avatar {
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid white;
+  border: 2px solid white;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .user-profile-wrapper:hover .user-avatar {
@@ -217,6 +236,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
   background: #10b981;
   box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
   animation: blink 2s ease-in-out infinite;
+  flex-shrink: 0;
 }
 
 @keyframes blink {
@@ -232,12 +252,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
   letter-spacing: 0.5px;
 }
 
-/* Navigation Section */
+/* Navigation Section - KEY FIX: Made scrollable */
 .nav-section {
   flex: 1;
   padding: 0.75rem;
   overflow-y: auto;
-  margin-top: 1rem;
+  overflow-x: hidden;
+  margin-top: 0;
+  min-height: 0; /* Important for flex children */
 }
 
 .nav-section::-webkit-scrollbar {
@@ -270,14 +292,25 @@ $current_page = basename($_SERVER['PHP_SELF']);
   gap: 0.5rem;
 }
 
+.nav-label:first-child {
+  margin-top: 0.5rem;
+}
+
 .nav-label::before {
   content: '';
   width: 20px;
   height: 2px;
   background: linear-gradient(90deg, #667eea, transparent);
+  flex-shrink: 0;
 }
 
 /* Menu Items */
+.pc-navbar {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 .menu-item {
   width: 100%;
   display: flex;
@@ -341,6 +374,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 .menu-item span {
   flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Logout Button Special Style */
@@ -363,12 +399,30 @@ $current_page = basename($_SERVER['PHP_SELF']);
     width: 260px;
   }
   
+  .sidebar-brand {
+    padding: 1rem;
+  }
+  
+  .logo-image {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  
+  .logo-text h1 {
+    font-size: 1.2rem;
+  }
+  
   .user-name {
     font-size: 0.85rem;
   }
   
   .user-email {
     font-size: 0.65rem;
+  }
+  
+  .user-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
   }
 }
 </style>
