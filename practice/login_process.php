@@ -26,6 +26,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $user = $result->fetch_assoc();
 
         if (password_verify($password, $user['password'])) {
+            // Check if user is approved
+            if (!isset($user['is_approved']) || $user['is_approved'] != 1) {
+                echo "<script>alert('Your account is pending approval. Please contact an administrator.'); window.history.back();</script>";
+                exit;
+            }
+            
             // ✅ Correct secret key
             $secret_key = "your_secret_key_here_change_this_in_production";
             $payload = [
@@ -36,7 +42,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 "data" => [
                     "id" => $user['id'],
                     "fullname" => $user['fullname'],
-                    "email" => $user['email']
+                    "email" => $user['email'],
+                    "is_admin" => isset($user['is_admin']) ? (bool)$user['is_admin'] : false
                 ]
             ];
 
@@ -45,8 +52,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // ✅ Store the token in a cookie (valid for all localhost paths)
             setcookie("jwt_token", $jwt, time() + (60 * 60), "/", "localhost", false, true);
 
-            // ✅ Redirect to dashboard
-            header("Location: http://localhost/FinTrack-Personal-Expense-Tracker/practice/dist/admin/dashboard.php");
+            // ✅ Redirect based on user role
+            if (isset($user['is_admin']) && $user['is_admin'] == 1) {
+                header("Location: http://localhost/FinTrack-Personal-Expense-Tracker/practice/admin/dashboard.php");
+            } else {
+                header("Location: http://localhost/FinTrack-Personal-Expense-Tracker/practice/dist/admin/dashboard.php");
+            }
             exit;
         } else {
             echo "<script>alert('Invalid password!'); window.history.back();</script>";
