@@ -1,4 +1,4 @@
-# 📊 FinTrack: Personal Expense Tracker System
+# 📊 FinTrack: Personal Expense Tracker 
 
 ## 📌 Project Overview
 **FinTrack** is a simple and user-friendly desktop-based expense tracker designed to help individuals and families manage their finances effectively. Unlike most online tools, FinTrack works offline, making it more accessible and reliable.
