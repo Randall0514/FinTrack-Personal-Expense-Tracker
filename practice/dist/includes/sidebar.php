@@ -447,8 +447,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <img src="<?php echo htmlspecialchars($userData['profile_picture']); ?>" alt="Profile" class="user-avatar" />
             <div class="user-info">
               <p class="user-name"><?php echo htmlspecialchars($userData['fullname']); ?></p>
-              <p class="user-email"><?php echo htmlspecialchars($user['email']); ?></p>
-              <div class="user-status">
+                <div class="user-status">
                 <span class="status-indicator"></span>
                 <span class="status-text">Online</span>
               </div>

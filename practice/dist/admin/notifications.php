@@ -87,14 +87,49 @@ $dailyPercentage = $dailyBudget > 0 ? ($dailySpending / $dailyBudget) * 100 : 0;
 $weeklyPercentage = $weeklyBudget > 0 ? ($weeklySpending / $weeklyBudget) * 100 : 0;
 $monthlyPercentage = $monthlyBudget > 0 ? ($monthlySpending / $monthlyBudget) * 100 : 0;
 
-// Daily notifications
+// ==================== DAILY NOTIFICATIONS ====================
+// Check for INFO notification (60-79%)
+if ($dailyPercentage >= 60 && $dailyPercentage < 80) {
+    $key = 'daily_budget_info_' . $today;
+    if (!isNotificationDismissed($conn, $user_id, $key)) {
+        $allNotifications[] = [
+            'icon' => 'info',
+            'title' => 'Daily Budget Info',
+            'message' => 'You have used ' . number_format($dailyPercentage, 1) . '% of your daily budget (₱' . number_format($dailySpending, 2) . ' of ₱' . number_format($dailyBudget, 2) . ')',
+            'time' => date('h:i A'),
+            'date' => date('M d, Y'),
+            'type' => 'info',
+            'category' => 'Budget Alert',
+            'key' => $key
+        ];
+    }
+}
+
+// Check for WARNING notification (80%+)
+if ($dailyPercentage >= 80) {
+    $key = 'daily_budget_warning_' . $today;
+    if (!isNotificationDismissed($conn, $user_id, $key)) {
+        $allNotifications[] = [
+            'icon' => 'alert-triangle',
+            'title' => 'Daily Budget Warning',
+            'message' => 'You have used ' . number_format($dailyPercentage, 1) . '% of your daily budget (₱' . number_format($dailySpending, 2) . ' of ₱' . number_format($dailyBudget, 2) . ')',
+            'time' => date('h:i A'),
+            'date' => date('M d, Y'),
+            'type' => 'warning',
+            'category' => 'Budget Alert',
+            'key' => $key
+        ];
+    }
+}
+
+// Check for DANGER notification (exceeded budget)
 if ($dailySpending > $dailyBudget) {
     $key = 'daily_budget_exceeded_' . $today;
     if (!isNotificationDismissed($conn, $user_id, $key)) {
         $allNotifications[] = [
             'icon' => 'alert-circle',
             'title' => 'Daily Budget Exceeded!',
-            'message' => 'You have exceeded your daily budget by ₱' . number_format($dailySpending - $dailyBudget, 2),
+            'message' => 'You have exceeded your daily budget by ₱' . number_format($dailySpending - $dailyBudget, 2) . ' (₱' . number_format($dailySpending, 2) . ' of ₱' . number_format($dailyBudget, 2) . ')',
             'time' => date('h:i A'),
             'date' => date('M d, Y'),
             'type' => 'danger',
@@ -102,13 +137,34 @@ if ($dailySpending > $dailyBudget) {
             'key' => $key
         ];
     }
-} elseif ($dailyPercentage >= 90) {
-    $key = 'daily_budget_warning_' . $today;
+}
+
+// ==================== WEEKLY NOTIFICATIONS ====================
+// Check for INFO notification (60-79%)
+if ($weeklyPercentage >= 60 && $weeklyPercentage < 80) {
+    $key = 'weekly_budget_info_' . $weekStart;
+    if (!isNotificationDismissed($conn, $user_id, $key)) {
+        $allNotifications[] = [
+            'icon' => 'info',
+            'title' => 'Weekly Budget Info',
+            'message' => 'You have used ' . number_format($weeklyPercentage, 1) . '% of your weekly budget (₱' . number_format($weeklySpending, 2) . ' of ₱' . number_format($weeklyBudget, 2) . ')',
+            'time' => date('h:i A'),
+            'date' => date('M d, Y'),
+            'type' => 'info',
+            'category' => 'Budget Alert',
+            'key' => $key
+        ];
+    }
+}
+
+// Check for WARNING notification (80%+)
+if ($weeklyPercentage >= 80) {
+    $key = 'weekly_budget_warning_' . $weekStart;
     if (!isNotificationDismissed($conn, $user_id, $key)) {
         $allNotifications[] = [
             'icon' => 'alert-triangle',
-            'title' => 'Daily Budget Warning',
-            'message' => 'You have used ' . number_format($dailyPercentage, 1) . '% of your daily budget',
+            'title' => 'Weekly Budget Alert',
+            'message' => 'You have used ' . number_format($weeklyPercentage, 1) . '% of your weekly budget (₱' . number_format($weeklySpending, 2) . ' of ₱' . number_format($weeklyBudget, 2) . ')',
             'time' => date('h:i A'),
             'date' => date('M d, Y'),
             'type' => 'warning',
@@ -118,14 +174,14 @@ if ($dailySpending > $dailyBudget) {
     }
 }
 
-// Weekly notifications
+// Check for DANGER notification (exceeded budget)
 if ($weeklySpending > $weeklyBudget) {
     $key = 'weekly_budget_exceeded_' . $weekStart;
     if (!isNotificationDismissed($conn, $user_id, $key)) {
         $allNotifications[] = [
             'icon' => 'alert-circle',
             'title' => 'Weekly Budget Exceeded!',
-            'message' => 'You have exceeded your weekly budget by ₱' . number_format($weeklySpending - $weeklyBudget, 2),
+            'message' => 'You have exceeded your weekly budget by ₱' . number_format($weeklySpending - $weeklyBudget, 2) . ' (₱' . number_format($weeklySpending, 2) . ' of ₱' . number_format($weeklyBudget, 2) . ')',
             'time' => date('h:i A'),
             'date' => date('M d, Y'),
             'type' => 'danger',
@@ -133,13 +189,34 @@ if ($weeklySpending > $weeklyBudget) {
             'key' => $key
         ];
     }
-} elseif ($weeklyPercentage >= 80) {
-    $key = 'weekly_budget_warning_' . $weekStart;
+}
+
+// ==================== MONTHLY NOTIFICATIONS ====================
+// Check for INFO notification (60-79%)
+if ($monthlyPercentage >= 60 && $monthlyPercentage < 80) {
+    $key = 'monthly_budget_info_' . $currentMonth;
+    if (!isNotificationDismissed($conn, $user_id, $key)) {
+        $allNotifications[] = [
+            'icon' => 'info',
+            'title' => 'Monthly Budget Info',
+            'message' => 'You have used ' . number_format($monthlyPercentage, 1) . '% of your monthly budget (₱' . number_format($monthlySpending, 2) . ' of ₱' . number_format($monthlyBudget, 2) . ')',
+            'time' => date('h:i A'),
+            'date' => date('M d, Y'),
+            'type' => 'info',
+            'category' => 'Budget Info',
+            'key' => $key
+        ];
+    }
+}
+
+// Check for WARNING notification (80%+)
+if ($monthlyPercentage >= 80) {
+    $key = 'monthly_budget_warning_' . $currentMonth;
     if (!isNotificationDismissed($conn, $user_id, $key)) {
         $allNotifications[] = [
             'icon' => 'alert-triangle',
-            'title' => 'Weekly Budget Alert',
-            'message' => 'You have used ' . number_format($weeklyPercentage, 1) . '% of your weekly budget',
+            'title' => 'Monthly Budget Warning',
+            'message' => 'You have used ' . number_format($monthlyPercentage, 1) . '% of your monthly budget (₱' . number_format($monthlySpending, 2) . ' of ₱' . number_format($monthlyBudget, 2) . ')',
             'time' => date('h:i A'),
             'date' => date('M d, Y'),
             'type' => 'warning',
@@ -149,32 +226,18 @@ if ($weeklySpending > $weeklyBudget) {
     }
 }
 
-// Monthly notifications
+// Check for DANGER notification (exceeded budget)
 if ($monthlySpending > $monthlyBudget) {
     $key = 'monthly_budget_exceeded_' . $currentMonth;
     if (!isNotificationDismissed($conn, $user_id, $key)) {
         $allNotifications[] = [
             'icon' => 'alert-circle',
             'title' => 'Monthly Budget Exceeded!',
-            'message' => 'You have exceeded your monthly budget by ₱' . number_format($monthlySpending - $monthlyBudget, 2),
+            'message' => 'You have exceeded your monthly budget by ₱' . number_format($monthlySpending - $monthlyBudget, 2) . ' (₱' . number_format($monthlySpending, 2) . ' of ₱' . number_format($monthlyBudget, 2) . ')',
             'time' => date('h:i A'),
             'date' => date('M d, Y'),
             'type' => 'danger',
             'category' => 'Budget Alert',
-            'key' => $key
-        ];
-    }
-} elseif ($monthlyPercentage >= 75) {
-    $key = 'monthly_budget_info_' . $currentMonth;
-    if (!isNotificationDismissed($conn, $user_id, $key)) {
-        $allNotifications[] = [
-            'icon' => 'info',
-            'title' => 'Monthly Budget Info',
-            'message' => 'You have used ' . number_format($monthlyPercentage, 1) . '% of your monthly budget',
-            'time' => date('h:i A'),
-            'date' => date('M d, Y'),
-            'type' => 'info',
-            'category' => 'Budget Info',
             'key' => $key
         ];
     }

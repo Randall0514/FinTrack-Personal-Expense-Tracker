@@ -2,7 +2,7 @@
 session_start();
 require __DIR__ . '/../../vendor/autoload.php';
 
-// Database connection - adjust this path based on your actual file location
+// Database connection
 include '../database/config/db.php';
 
 use Firebase\JWT\JWT;
@@ -11,7 +11,6 @@ use Firebase\JWT\Key;
 // JWT Authentication
 $secret_key = "your_secret_key_here_change_this_in_production";
 
-// ✅ Check JWT via cookie
 if (!isset($_COOKIE['jwt_token'])) {
     echo "<script>alert('You must log in first.'); window.location.href='../../login.php';</script>";
     exit;
@@ -28,10 +27,9 @@ try {
     exit;
 }
 
-// ✅ Get user ID from JWT
 $user_id = $user['id'];
 
-// ✅ Try to fetch user's budgets, fall back to defaults if columns don't exist
+// Fetch user's budgets
 $dailyBudget = 500;
 $weeklyBudget = 3000;
 $monthlyBudget = 10000;
@@ -52,13 +50,12 @@ try {
         $budget_query->close();
     }
 } catch (Exception $e) {
-    // Columns don't exist yet, use defaults
     $dailyBudget = 500;
     $weeklyBudget = 3000;
     $monthlyBudget = 10000;
 }
 
-// ✅ Fetch only THIS user's ACTIVE (NON-ARCHIVED) expenses
+// Fetch expenses
 $expenses = [];
 $stmt = $conn->prepare("SELECT * FROM expenses WHERE user_id = ? AND archived = 0 ORDER BY date DESC");
 if ($stmt) {
@@ -74,18 +71,15 @@ if ($stmt) {
     $stmt->close();
 }
 
-// Calculate statistics - ONLY uses non-archived expenses now
+// Calculate spending
 $dailySpending = 0;
 $weeklySpending = 0;
 $monthlySpending = 0;
 $today = date('Y-m-d');
 $currentMonth = date('Y-m');
-
-// Calculate week range (Monday to Sunday)
 $weekStart = date('Y-m-d', strtotime('monday this week'));
 $weekEnd = date('Y-m-d', strtotime('sunday this week'));
 
-// Loop through ONLY non-archived expenses
 foreach ($expenses as $expense) {
     $expenseDate = $expense['date'];
     $amount = floatval($expense['amount']);
@@ -101,12 +95,12 @@ foreach ($expenses as $expense) {
     }
 }
 
-// Calculate percentages (based on budget)
+// Calculate percentages
 $dailyPercentage = min(100, ($dailyBudget > 0 ? ($dailySpending / $dailyBudget) * 100 : 0));
 $weeklyPercentage = min(100, ($weeklyBudget > 0 ? ($weeklySpending / $weeklyBudget) * 100 : 0));
 $monthlyPercentage = min(100, ($monthlyBudget > 0 ? ($monthlySpending / $monthlyBudget) * 100 : 0));
 
-// Category breakdown for chart
+// Category breakdown
 $categoryTotals = [];
 foreach ($expenses as $expense) {
     $cat = $expense['category'];
@@ -117,28 +111,76 @@ foreach ($expenses as $expense) {
     $categoryTotals[$cat] += $amt;
 }
 
-// Recent expenses (limit to 5)
+// Recent expenses
 $recentExpenses = array_slice($expenses, 0, 5);
 
-// Budget alerts
+// Enhanced alerts with multiple thresholds
 $alerts = [];
-if ($dailyPercentage >= 90) {
-    $alerts[] = ['type' => 'danger', 'message' => 'Daily budget almost exceeded!'];
-}
-if ($weeklyPercentage >= 90) {
-    $alerts[] = ['type' => 'danger', 'message' => 'Weekly budget almost exceeded!'];
-}
-if ($monthlyPercentage >= 80) {
-    $alerts[] = ['type' => 'warning', 'message' => 'Monthly budget at 80%!'];
-}
+
+// Daily alerts
 if ($dailySpending > $dailyBudget) {
-    $alerts[] = ['type' => 'danger', 'message' => 'Daily budget exceeded by ₱' . number_format($dailySpending - $dailyBudget, 2)];
-}
-if ($weeklySpending > $weeklyBudget) {
-    $alerts[] = ['type' => 'danger', 'message' => 'Weekly budget exceeded by ₱' . number_format($weeklySpending - $weeklyBudget, 2)];
+    $alerts[] = [
+        'type' => 'danger', 
+        'message' => '🚨 Daily budget exceeded by ₱' . number_format($dailySpending - $dailyBudget, 2) . '!',
+        'icon' => 'alert-circle'
+    ];
+} elseif ($dailyPercentage >= 80) {
+    $alerts[] = [
+        'type' => 'warning', 
+        'message' => '⚠️ Daily budget warning: ' . number_format($dailyPercentage, 1) . '% used (₱' . number_format($dailySpending, 2) . ' of ₱' . number_format($dailyBudget, 2) . ')',
+        'icon' => 'alert-triangle'
+    ];
+} elseif ($dailyPercentage >= 60) {
+    $alerts[] = [
+        'type' => 'info', 
+        'message' => 'ℹ️ Daily budget update: ' . number_format($dailyPercentage, 1) . '% used (₱' . number_format($dailySpending, 2) . ' of ₱' . number_format($dailyBudget, 2) . ')',
+        'icon' => 'info'
+    ];
 }
 
-// ✅ Quick Add Expense Handler with user_id
+// Weekly alerts
+if ($weeklySpending > $weeklyBudget) {
+    $alerts[] = [
+        'type' => 'danger', 
+        'message' => '🚨 Weekly budget exceeded by ₱' . number_format($weeklySpending - $weeklyBudget, 2) . '!',
+        'icon' => 'alert-circle'
+    ];
+} elseif ($weeklyPercentage >= 80) {
+    $alerts[] = [
+        'type' => 'warning', 
+        'message' => '⚠️ Weekly budget warning: ' . number_format($weeklyPercentage, 1) . '% used (₱' . number_format($weeklySpending, 2) . ' of ₱' . number_format($weeklyBudget, 2) . ')',
+        'icon' => 'alert-triangle'
+    ];
+} elseif ($weeklyPercentage >= 60) {
+    $alerts[] = [
+        'type' => 'info', 
+        'message' => 'ℹ️ Weekly budget update: ' . number_format($weeklyPercentage, 1) . '% used (₱' . number_format($weeklySpending, 2) . ' of ₱' . number_format($weeklyBudget, 2) . ')',
+        'icon' => 'info'
+    ];
+}
+
+// Monthly alerts
+if ($monthlySpending > $monthlyBudget) {
+    $alerts[] = [
+        'type' => 'danger', 
+        'message' => '🚨 Monthly budget exceeded by ₱' . number_format($monthlySpending - $monthlyBudget, 2) . '!',
+        'icon' => 'alert-circle'
+    ];
+} elseif ($monthlyPercentage >= 80) {
+    $alerts[] = [
+        'type' => 'warning', 
+        'message' => '⚠️ Monthly budget warning: ' . number_format($monthlyPercentage, 1) . '% used (₱' . number_format($monthlySpending, 2) . ' of ₱' . number_format($monthlyBudget, 2) . ')',
+        'icon' => 'alert-triangle'
+    ];
+} elseif ($monthlyPercentage >= 60) {
+    $alerts[] = [
+        'type' => 'info', 
+        'message' => 'ℹ️ Monthly budget update: ' . number_format($monthlyPercentage, 1) . '% used (₱' . number_format($monthlySpending, 2) . ' of ₱' . number_format($monthlyBudget, 2) . ')',
+        'icon' => 'info'
+    ];
+}
+
+// Quick add expense
 if (isset($_POST['quick_add'])) {
     $category = $_POST['category'];
     $amount = $_POST['amount'];
@@ -146,7 +188,6 @@ if (isset($_POST['quick_add'])) {
     $description = $_POST['description'];
     $payment_method = $_POST['payment_method'];
 
-    // ✅ Include user_id in the INSERT
     $stmt = $conn->prepare("INSERT INTO expenses (user_id, category, amount, date, description, payment_method) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("isdsss", $user_id, $category, $amount, $date, $description, $payment_method);
     
@@ -155,6 +196,14 @@ if (isset($_POST['quick_add'])) {
         exit;
     }
     $stmt->close();
+}
+
+if (isset($_GET['success'])) {
+    $alerts[] = [
+        'type' => 'success',
+        'message' => '✅ Expense added successfully!',
+        'icon' => 'check-circle'
+    ];
 }
 
 $categories = [
@@ -171,7 +220,6 @@ $categories = [
 ?>
 <!doctype html>
 <html lang="en" data-pc-preset="preset-1" data-pc-sidebar-caption="true" data-pc-direction="ltr" dir="ltr" data-pc-theme="light">
-
 <head>
   <title>FinTrack - Dashboard</title>
   <meta charset="utf-8" />
@@ -253,42 +301,135 @@ $categories = [
 
     .card-body { padding: 25px !important; }
 
-    .card-body h3 {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      font-weight: 700;
-      font-size: 2rem;
+    /* Alert Container - Fixed Position */
+    .alert-container {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      z-index: 9999;
+      max-width: 450px;
+      width: 100%;
     }
 
-    /* Alert Styles */
     .alert {
-      padding: 15px 20px;
-      border-radius: 10px;
+      padding: 18px 24px;
+      border-radius: 12px;
       margin-bottom: 15px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 15px;
       animation: slideInRight 0.5s ease-out;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(10px);
+      border: 2px solid transparent;
+      position: relative;
+      overflow: hidden;
     }
+
+    .alert i {
+      font-size: 1.8rem;
+      flex-shrink: 0;
+    }
+
+    .alert-message {
+      flex: 1;
+      font-weight: 600;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .alert-close {
+      background: none;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      padding: 4px;
+      opacity: 0.7;
+      transition: opacity 0.3s;
+      flex-shrink: 0;
+    }
+
+    .alert-close:hover { opacity: 1; }
+    .alert-close i { font-size: 1.2rem; }
 
     .alert-danger {
       background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
       color: white;
+      border-color: #fca5a5;
+    }
+
+    .alert-danger::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, #fca5a5, #ef4444, #dc2626);
+      animation: pulse 2s ease-in-out infinite;
     }
 
     .alert-warning {
       background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
       color: white;
+      border-color: #fcd34d;
+    }
+
+    .alert-warning::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, #fcd34d, #f59e0b, #d97706);
+      animation: pulse 2s ease-in-out infinite;
     }
 
     .alert-success {
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       color: white;
+      border-color: #6ee7b7;
     }
 
-    /* Budget Progress */
+    .alert-info {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border-color: #93c5fd;
+    }
+
+    .alert-progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.5);
+      width: 100%;
+      transform-origin: left;
+      animation: shrink 5s linear forwards;
+    }
+
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(100px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    @keyframes shrink {
+      from { transform: scaleX(1); }
+      to { transform: scaleX(0); }
+    }
+
+    @keyframes fadeOut {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(100px); }
+    }
+
+    /* Budget Cards */
     .budget-card {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
@@ -303,12 +444,6 @@ $categories = [
       margin-bottom: 10px;
     }
 
-    .budget-card h3 { 
-      color: white !important; 
-      margin-bottom: 15px;
-    }
-
-    /* NEW: Budget Amount Labels */
     .budget-amounts {
       display: flex;
       justify-content: space-between;
@@ -342,14 +477,7 @@ $categories = [
       color: white;
       font-weight: 700;
     }
-
-    .budget-value.spending {
-      color: #fbbf24;
-    }
-
-    .budget-value.limit {
-      color: #fbbf24;
-    }
+    
 
     .progress-bar-wrapper {
       background: rgba(255, 255, 255, 0.2);
@@ -385,47 +513,7 @@ $categories = [
       color: white;
     }
 
-    /* Filter Section */
-    .filter-section {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .filter-section select,
-    .filter-section input {
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      background: white;
-      outline: none;
-    }
-
-    .filter-btn {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 8px 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: transform 0.3s;
-    }
-
-    .filter-btn:hover { transform: scale(1.05); }
-
     /* Quick Add Form */
-    .quick-add-form {
-      background: white;
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    }
-
     .quick-add-form input,
     .quick-add-form select,
     .quick-add-form textarea {
@@ -505,14 +593,12 @@ $categories = [
       color: #764ba2;
     }
 
-    /* Chart Container */
     .chart-container {
       position: relative;
       height: 300px;
       margin-top: 20px;
     }
 
-    /* Grid Layout */
     .dashboard-grid {
       display: grid;
       grid-template-columns: repeat(12, 1fr);
@@ -526,33 +612,10 @@ $categories = [
 
     @media (max-width: 768px) {
       .col-span-6, .col-span-4, .col-span-8 { grid-column: span 12; }
-      
-      .budget-amounts {
-        flex-direction: column;
-        gap: 10px;
-      }
-    }
-
-    @keyframes slideInRight {
-      from {
-        opacity: 0;
-        transform: translateX(50px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      .budget-amounts { flex-direction: column; gap: 10px; }
+      .alert-container { top: 10px; right: 10px; left: 10px; max-width: none; }
+      .alert { padding: 15px 18px; }
+      .alert-message { font-size: 0.875rem; }
     }
   </style>
 </head>
@@ -569,7 +632,7 @@ $categories = [
 
   <div class="pc-container">
     <div class="pc-content">
-      <!-- Breadcrumb with User Info -->
+      <!-- Page Header -->
       <div class="page-header">
         <div class="page-block">
           <div class="page-header-title">
@@ -582,128 +645,101 @@ $categories = [
           <ul class="breadcrumb">
             <li class="breadcrumb-item"><a href="dashboard.php">Home</a></li>
             <li class="breadcrumb-item" aria-current="page">Dashboard</li>
-            <li class="breadcrumb-item"><a href="logout.php" style="color: rgba(255, 255, 255, 0.95) !important;">Logout</a></li>
+            <li class="breadcrumb-item"><a href="logout.php">Logout</a></li>
           </ul>
         </div>
       </div>
 
-      <!-- Alerts/Notifications -->
-      <?php if (!empty($alerts)): ?>
-        <div style="animation: fadeInUp 0.5s ease-out;">
-          <?php foreach ($alerts as $alert): ?>
-            <div class="alert alert-<?php echo $alert['type']; ?>">
-              <i class="feather icon-alert-circle" style="font-size: 1.5rem;"></i>
-              <strong><?php echo $alert['message']; ?></strong>
+      <!-- Alert Container -->
+      <div class="alert-container">
+        <?php if (!empty($alerts)): ?>
+          <?php foreach ($alerts as $index => $alert): ?>
+            <div class="alert alert-<?php echo $alert['type']; ?>" id="alert-<?php echo $index; ?>">
+              <i class="feather icon-<?php echo $alert['icon']; ?>"></i>
+              <span class="alert-message"><?php echo $alert['message']; ?></span>
+              <button class="alert-close" onclick="dismissAlert(<?php echo $index; ?>)">
+                <i class="feather icon-x"></i>
+              </button>
+              <div class="alert-progress"></div>
             </div>
           <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
-
-      <?php if (isset($_GET['success'])): ?>
-        <div class="alert alert-success">
-          <i class="feather icon-check-circle" style="font-size: 1.5rem;"></i>
-          <strong>Expense added successfully!</strong>
-        </div>
-      <?php endif; ?>
+        <?php endif; ?>
+      </div>
 
       <div class="dashboard-grid">
-        <!-- Budget Tracking Cards -->
+        <!-- Monthly Budget Card -->
         <div class="col-span-4">
           <div class="budget-card" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
             <h6>📆 Monthly Budget</h6>
-            
-            <!-- NEW: Labeled Budget Amounts -->
             <div class="budget-amounts">
               <div class="budget-amount-item">
                 <span class="budget-label">Expenses</span>
-                <span class="budget-value spending">₱ <?php echo number_format($monthlySpending, 2); ?></span>
+                <span class="budget-value">₱ <?php echo number_format($monthlySpending, 2); ?></span>
               </div>
               <div class="budget-amount-item">
                 <span class="budget-label">Budget Limit</span>
-                <span class="budget-value limit">₱ <?php echo number_format($monthlyBudget, 2); ?></span>
+                <span class="budget-value">₱ <?php echo number_format($monthlyBudget, 2); ?></span>
               </div>
             </div>
-            
             <div class="progress-bar-wrapper">
               <div class="progress-bar-fill" style="width: <?php echo $monthlyPercentage; ?>%"></div>
             </div>
-            
             <div class="budget-summary">
-              <span class="budget-summary-text">
-                <strong><?php echo number_format($monthlyPercentage, 1); ?>%</strong> used
-              </span>
-              <span class="budget-summary-text">
-                <strong>₱ <?php echo number_format(max(0, $monthlyBudget - $monthlySpending), 2); ?></strong> left
-              </span>
+              <span class="budget-summary-text"><strong><?php echo number_format($monthlyPercentage, 1); ?>%</strong> used</span>
+              <span class="budget-summary-text"><strong>₱ <?php echo number_format(max(0, $monthlyBudget - $monthlySpending), 2); ?></strong> left</span>
             </div>
           </div>
         </div>
 
+        <!-- Weekly Budget Card -->
         <div class="col-span-4">
           <div class="budget-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
             <h6>📅 Weekly Budget</h6>
-            
-            <!-- NEW: Labeled Budget Amounts -->
             <div class="budget-amounts">
               <div class="budget-amount-item">
                 <span class="budget-label">Expenses</span>
-                <span class="budget-value spending">₱ <?php echo number_format($weeklySpending, 2); ?></span>
+                <span class="budget-value">₱ <?php echo number_format($weeklySpending, 2); ?></span>
               </div>
               <div class="budget-amount-item">
                 <span class="budget-label">Budget Limit</span>
-                <span class="budget-value limit">₱ <?php echo number_format($weeklyBudget, 2); ?></span>
+                <span class="budget-value">₱ <?php echo number_format($weeklyBudget, 2); ?></span>
               </div>
             </div>
-            
             <div class="progress-bar-wrapper">
               <div class="progress-bar-fill" style="width: <?php echo $weeklyPercentage; ?>%"></div>
             </div>
-            
             <div class="budget-summary">
-              <span class="budget-summary-text">
-                <strong><?php echo number_format($weeklyPercentage, 1); ?>%</strong> used
-              </span>
-              <span class="budget-summary-text">
-                <strong>₱ <?php echo number_format(max(0, $weeklyBudget - $weeklySpending), 2); ?></strong> left
-              </span>
+              <span class="budget-summary-text"><strong><?php echo number_format($weeklyPercentage, 1); ?>%</strong> used</span>
+              <span class="budget-summary-text"><strong>₱ <?php echo number_format(max(0, $weeklyBudget - $weeklySpending), 2); ?></strong> left</span>
             </div>
           </div>
         </div>
 
+        <!-- Daily Budget Card -->
         <div class="col-span-4">
           <div class="budget-card">
             <h6>💰 Daily Budget</h6>
-            
-            <!-- NEW: Labeled Budget Amounts -->
             <div class="budget-amounts">
               <div class="budget-amount-item">
                 <span class="budget-label">Expenses</span>
-                <span class="budget-value spending">₱ <?php echo number_format($dailySpending, 2); ?></span>
+                <span class="budget-value">₱ <?php echo number_format($dailySpending, 2); ?></span>
               </div>
               <div class="budget-amount-item">
                 <span class="budget-label">Budget Limit</span>
-                <span class="budget-value limit">₱ <?php echo number_format($dailyBudget, 2); ?></span>
+                <span class="budget-value">₱ <?php echo number_format($dailyBudget, 2); ?></span>
               </div>
             </div>
-            
             <div class="progress-bar-wrapper">
               <div class="progress-bar-fill" style="width: <?php echo $dailyPercentage; ?>%"></div>
             </div>
-            
             <div class="budget-summary">
-              <span class="budget-summary-text">
-                <strong><?php echo number_format($dailyPercentage, 1); ?>%</strong> used
-              </span>
-              <span class="budget-summary-text">
-                <strong>₱ <?php echo number_format(max(0, $dailyBudget - $dailySpending), 2); ?></strong> left
-              </span>
+              <span class="budget-summary-text"><strong><?php echo number_format($dailyPercentage, 1); ?>%</strong> used</span>
+              <span class="budget-summary-text"><strong>₱ <?php echo number_format(max(0, $dailyBudget - $dailySpending), 2); ?></strong> left</span>
             </div>
           </div>
         </div>
 
-        
-
-        <!-- Data Visualization - Category Breakdown Chart -->
+        <!-- Category Chart -->
         <div class="col-span-8">
           <div class="card">
             <div class="card-header">
@@ -796,6 +832,27 @@ $categories = [
   <script src="../assets/js/script.js"></script>
 
   <script>
+    // Auto-dismiss alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+      <?php if (!empty($alerts)): ?>
+        <?php foreach ($alerts as $index => $alert): ?>
+          setTimeout(function() {
+            dismissAlert(<?php echo $index; ?>);
+          }, 5000 + (<?php echo $index; ?> * 500));
+        <?php endforeach; ?>
+      <?php endif; ?>
+    });
+
+    function dismissAlert(index) {
+      const alert = document.getElementById('alert-' + index);
+      if (alert) {
+        alert.style.animation = 'fadeOut 0.4s ease-out forwards';
+        setTimeout(function() {
+          alert.remove();
+        }, 400);
+      }
+    }
+
     // Category Chart
     <?php if (!empty($categoryTotals)): ?>
     const categoryData = <?php echo json_encode($categoryTotals); ?>;
@@ -829,24 +886,9 @@ $categories = [
     });
     <?php endif; ?>
 
-    // Filter functionality
-    function applyFilters() {
-      const category = document.getElementById('categoryFilter').value;
-      const dateFrom = document.getElementById('dateFromFilter').value;
-      const dateTo = document.getElementById('dateToFilter').value;
-      
-      let params = [];
-      if (category) params.push(`category=${category}`);
-      if (dateFrom) params.push(`from=${dateFrom}`);
-      if (dateTo) params.push(`to=${dateTo}`);
-      
-      window.location.href = 'manage_expenses.php' + (params.length ? '?' + params.join('&') : '');
-    }
-
-    function resetFilters() {
-      document.getElementById('categoryFilter').value = '';
-      document.getElementById('dateFromFilter').value = '';
-      document.getElementById('dateToFilter').value = '';
+    // Initialize Feather icons
+    if (typeof feather !== 'undefined') {
+      feather.replace();
     }
 
     layout_change('false');
