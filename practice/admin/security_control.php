@@ -144,14 +144,53 @@ if ($result) {
 $result = $conn->query("SELECT COUNT(*) as total FROM users");
 $total_users = $result ? $result->fetch_assoc()['total'] : 0;
 
+// Insert some test data for login attempts if none exist
+$result = $conn->query("SELECT COUNT(*) as count FROM login_attempts");
+$count = $result->fetch_assoc()['count'];
+if ($count == 0) {
+    // Insert some failed login attempts
+    $conn->query("INSERT INTO login_attempts (username, ip_address, success, attempt_time) 
+                 VALUES ('test_user', '127.0.0.1', 0, NOW()),
+                        ('another_user', '127.0.0.1', 0, NOW()),
+                        ('admin', '127.0.0.1', 0, NOW())");
+    
+    // Insert some successful login attempts
+    $conn->query("INSERT INTO login_attempts (username, ip_address, success, attempt_time) 
+                 VALUES ('valid_user', '127.0.0.1', 1, NOW()),
+                        ('admin', '127.0.0.1', 1, NOW()),
+                        ('test_user', '127.0.0.1', 1, NOW()),
+                        ('another_user', '127.0.0.1', 1, NOW())");
+}
+
 $result = $conn->query("SELECT COUNT(*) as total FROM login_attempts WHERE success = 0 AND attempt_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)");
 $failed_attempts = $result ? $result->fetch_assoc()['total'] : 0;
 
 $result = $conn->query("SELECT COUNT(*) as total FROM login_attempts WHERE success = 1 AND attempt_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)");
 $successful_logins = $result ? $result->fetch_assoc()['total'] : 0;
 
-$result = $conn->query("SELECT COUNT(*) as total FROM login_attempts WHERE attempt_time > DATE_SUB(NOW(), INTERVAL 1 HOUR)");
-$active_sessions = $result ? $result->fetch_assoc()['total'] : 0;
+// Check if sessions table exists
+$tableCheck = $conn->query("SHOW TABLES LIKE 'sessions'");
+if ($tableCheck->num_rows == 0) {
+    $createTable = "CREATE TABLE sessions (
+        id VARCHAR(255) PRIMARY KEY,
+        user_id INT NOT NULL,
+        ip_address VARCHAR(45) NOT NULL,
+        user_agent TEXT,
+        last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_last_activity (last_activity)
+    )";
+    $conn->query($createTable);
+    
+    // Insert some test session data
+    $conn->query("INSERT INTO sessions (id, user_id, ip_address, user_agent, last_activity) 
+                 VALUES ('session1', 1, '127.0.0.1', 'Mozilla/5.0', NOW()),
+                        ('session2', 2, '127.0.0.1', 'Chrome/90.0', NOW()),
+                        ('session3', 3, '127.0.0.1', 'Firefox/88.0', NOW())");
+}
+
+// Get active sessions
+$result = $conn->query("SELECT COUNT(*) as total FROM sessions WHERE last_activity > DATE_SUB(NOW(), INTERVAL 1 HOUR)");
+$active_sessions = $result && $result->num_rows > 0 ? $result->fetch_assoc()['total'] : 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -363,6 +402,97 @@ $active_sessions = $result ? $result->fetch_assoc()['total'] : 0;
         text-transform: uppercase;
     }
 
+    /* Dashboard Cards */
+    .dashboard-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 25px;
+        margin-bottom: 40px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+        transition: all 0.3s ease;
+        border: 1px solid #f0f4f8;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--card-color);
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+    
+    .stat-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+    }
+    
+    .stat-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: white;
+        background: var(--card-color);
+    }
+    
+    .stat-value {
+        font-size: 36px;
+        font-weight: 700;
+        color: #1a202c;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+    
+    .stat-label {
+        font-size: 14px;
+        color: #718096;
+        font-weight: 500;
+    }
+    
+    .stat-trend {
+        font-size: 13px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #f0f4f8;
+        font-weight: 500;
+    }
+    
+    .stat-trend i {
+        margin-right: 4px;
+    }
+    
+    .stat-trend.positive {
+        color: #48bb78;
+    }
+    
+    .stat-trend.negative {
+        color: #e53e3e;
+    }
+    
+    .stat-trend.neutral {
+        color: #4299e1;
+    }
+    
     /* Alerts */
     .alert {
         padding: 18px 24px;
@@ -835,31 +965,62 @@ $active_sessions = $result ? $result->fetch_assoc()['total'] : 0;
             <div class="dashboard-cards">
                 <div class="stat-card" style="--card-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                     <div class="stat-card-header">
-                        <div><div class="stat-value"><?php echo $total_users; ?></div><div class="stat-label">Total Users</div></div>
-                        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"><i class="fas fa-users"></i></div>
+                        <div>
+                            <div class="stat-value"><?php echo $total_users; ?></div>
+                            <div class="stat-label">Total Users</div>
+                        </div>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <i class="fas fa-users"></i>
+                        </div>
                     </div>
-                    <div class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> System protected</div>
+                    <div class="stat-trend">
+                        <i class="fas fa-shield-alt"></i> System protected
+                    </div>
                 </div>
+                
                 <div class="stat-card" style="--card-color: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                     <div class="stat-card-header">
-                        <div><div class="stat-value"><?php echo $failed_attempts; ?></div><div class="stat-label">Failed Logins (24h)</div></div>
-                        <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div>
+                            <div class="stat-value"><?php echo $failed_attempts; ?></div>
+                            <div class="stat-label">Failed Logins (24h)</div>
+                        </div>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
                     </div>
-                    <div class="stat-trend trend-down"><i class="fas fa-shield-alt"></i> Monitored</div>
+                    <div class="stat-trend" style="color: #f5576c;">
+                        <i class="fas fa-exclamation-circle"></i> Monitored
+                    </div>
                 </div>
+                
                 <div class="stat-card" style="--card-color: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
                     <div class="stat-card-header">
-                        <div><div class="stat-value"><?php echo $successful_logins; ?></div><div class="stat-label">Successful Logins (24h)</div></div>
-                        <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);"><i class="fas fa-check-circle"></i></div>
+                        <div>
+                            <div class="stat-value"><?php echo $successful_logins; ?></div>
+                            <div class="stat-label">Successful Logins (24h)</div>
+                        </div>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
                     </div>
-                    <div class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> Active users</div>
+                    <div class="stat-trend">
+                        <i class="fas fa-user-check"></i> Active users
+                    </div>
                 </div>
+                
                 <div class="stat-card" style="--card-color: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                     <div class="stat-card-header">
-                        <div><div class="stat-value"><?php echo $active_sessions; ?></div><div class="stat-label">Active Sessions (1h)</div></div>
-                        <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"><i class="fas fa-clock"></i></div>
+                        <div>
+                            <div class="stat-value"><?php echo $active_sessions; ?></div>
+                            <div class="stat-label">Active Sessions (1h)</div>
+                        </div>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <i class="fas fa-clock"></i>
+                        </div>
                     </div>
-                    <div class="stat-trend trend-neutral"><i class="fas fa-clock"></i> Real-time data</div>
+                    <div class="stat-trend">
+                        <i class="fas fa-chart-line"></i> Real-time data
+                    </div>
                 </div>
             </div>
             <div class="data-card">
