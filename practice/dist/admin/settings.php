@@ -174,22 +174,6 @@ if (isset($_POST['change_password'])) {
         $message_type = "warning";
     }
 }
-
-// Handle Notification Preferences
-if (isset($_POST['update_notifications'])) {
-    $email_notifications = isset($_POST['email_notifications']) ? 1 : 0;
-    $budget_alerts = isset($_POST['budget_alerts']) ? 1 : 0;
-    $weekly_reports = isset($_POST['weekly_reports']) ? 1 : 0;
-    
-    $stmt = $conn->prepare("UPDATE users SET email_notifications = ?, budget_alerts = ?, weekly_reports = ? WHERE id = ?");
-    $stmt->bind_param("iiii", $email_notifications, $budget_alerts, $weekly_reports, $user_id);
-    
-    if ($stmt->execute()) {
-        $message = "Notification preferences updated successfully!";
-        $message_type = "success";
-    }
-    $stmt->close();
-}
 ?>
 <!doctype html>
 <html lang="en" data-pc-preset="preset-1" data-pc-sidebar-caption="true" data-pc-direction="ltr" dir="ltr" data-pc-theme="light">
@@ -462,48 +446,6 @@ if (isset($_POST['update_notifications'])) {
     .form-group textarea:focus {
       border-color: #667eea;
       box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-    }
-
-    .form-group input[type="checkbox"] {
-      width: auto;
-      margin-right: 12px;
-      cursor: pointer;
-      transform: scale(1.2);
-    }
-
-    .checkbox-wrapper {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .checkbox-item {
-      display: flex;
-      align-items: flex-start;
-      padding: 15px;
-      border-radius: 10px;
-      background: rgba(102, 126, 234, 0.05);
-      transition: all 0.3s;
-    }
-
-    .checkbox-item:hover {
-      background: rgba(102, 126, 234, 0.1);
-    }
-
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      color: #333;
-      font-weight: 700;
-      cursor: pointer;
-      font-size: 0.95rem;
-    }
-
-    .checkbox-description {
-      color: #666;
-      font-size: 0.85rem;
-      margin: 5px 0 0 35px;
-      font-weight: 500;
     }
 
     /* Buttons */
@@ -861,9 +803,11 @@ if (isset($_POST['update_notifications'])) {
                     <label><i class="feather icon-calendar" style="margin-right: 5px;"></i> Daily Budget (₱)</label>
                     <input type="number" 
                            name="daily_budget" 
+                           id="daily_budget"
                            step="0.01" 
                            value="<?php echo $current_user['daily_budget'] ?? 500; ?>" 
                            placeholder="500.00"
+                           oninput="updateBudgets('daily')"
                            required>
                   </div>
                   
@@ -871,9 +815,11 @@ if (isset($_POST['update_notifications'])) {
                     <label><i class="feather icon-calendar" style="margin-right: 5px;"></i> Weekly Budget (₱)</label>
                     <input type="number" 
                            name="weekly_budget" 
+                           id="weekly_budget"
                            step="0.01" 
                            value="<?php echo $current_user['weekly_budget'] ?? 3000; ?>" 
                            placeholder="3000.00"
+                           oninput="updateBudgets('weekly')"
                            required>
                   </div>
                 </div>
@@ -882,9 +828,11 @@ if (isset($_POST['update_notifications'])) {
                   <label><i class="feather icon-calendar" style="margin-right: 5px;"></i> Monthly Budget (₱)</label>
                   <input type="number" 
                          name="monthly_budget" 
+                         id="monthly_budget"
                          step="0.01" 
                          value="<?php echo $current_user['monthly_budget'] ?? 10000; ?>" 
                          placeholder="10000.00"
+                         oninput="updateBudgets('monthly')"
                          required>
                 </div>
 
@@ -905,7 +853,7 @@ if (isset($_POST['update_notifications'])) {
         </div>
 
         <!-- Security Settings -->
-        <div class="col-span-6">
+        <div class="col-span-12">
           <div class="card">
             <div class="card-header">
               <i class="feather icon-lock"></i>
@@ -913,21 +861,23 @@ if (isset($_POST['update_notifications'])) {
             </div>
             <div class="card-body">
               <form method="POST">
-                <div class="form-group">
-                  <label><i class="feather icon-key" style="margin-right: 5px;"></i> Current Password</label>
-                  <input type="password" 
-                         name="current_password" 
-                         placeholder="Enter current password"
-                         required>
-                </div>
-                
-                <div class="form-group">
-                  <label><i class="feather icon-lock" style="margin-right: 5px;"></i> New Password</label>
-                  <input type="password" 
-                         name="new_password" 
-                         placeholder="Enter new password"
-                         minlength="8"
-                         required>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label><i class="feather icon-key" style="margin-right: 5px;"></i> Current Password</label>
+                    <input type="password" 
+                           name="current_password" 
+                           placeholder="Enter current password"
+                           required>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label><i class="feather icon-lock" style="margin-right: 5px;"></i> New Password</label>
+                    <input type="password" 
+                           name="new_password" 
+                           placeholder="Enter new password"
+                           minlength="8"
+                           required>
+                  </div>
                 </div>
                 
                 <div class="form-group">
@@ -949,72 +899,9 @@ if (isset($_POST['update_notifications'])) {
                   </div>
                 </div>
 
-                <button type="submit" name="change_password" class="btn btn-primary btn-full" style="margin-top: 20px;">
+                <button type="submit" name="change_password" class="btn btn-primary" style="margin-top: 20px;">
                   <i class="feather icon-key"></i>
                   <span>Change Password</span>
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        <!-- Notification Preferences -->
-        <div class="col-span-6">
-          <div class="card">
-            <div class="card-header">
-              <i class="feather icon-bell"></i>
-              <h6>Notification Preferences</h6>
-            </div>
-            <div class="card-body">
-              <form method="POST">
-                <div class="checkbox-wrapper">
-                  <div class="checkbox-item">
-                    <div>
-                      <label class="checkbox-label">
-                        <input type="checkbox" 
-                               name="email_notifications" 
-                               <?php echo ($current_user['email_notifications'] ?? 1) ? 'checked' : ''; ?>>
-                        <span>Email Notifications</span>
-                      </label>
-                      <p class="checkbox-description">Receive important updates and alerts via email</p>
-                    </div>
-                  </div>
-
-                  <div class="checkbox-item">
-                    <div>
-                      <label class="checkbox-label">
-                        <input type="checkbox" 
-                               name="budget_alerts" 
-                               <?php echo ($current_user['budget_alerts'] ?? 1) ? 'checked' : ''; ?>>
-                        <span>Budget Alerts</span>
-                      </label>
-                      <p class="checkbox-description">Get notified when approaching or exceeding budget limits</p>
-                    </div>
-                  </div>
-
-                  <div class="checkbox-item">
-                    <div>
-                      <label class="checkbox-label">
-                        <input type="checkbox" 
-                               name="weekly_reports" 
-                               <?php echo ($current_user['weekly_reports'] ?? 1) ? 'checked' : ''; ?>>
-                        <span>Weekly Reports</span>
-                      </label>
-                      <p class="checkbox-description">Receive weekly summaries of your spending patterns</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="info-box">
-                  <i class="feather icon-info"></i>
-                  <div>
-                    <strong>Stay Informed:</strong> Enable notifications to track your spending habits and receive timely alerts about your financial status.
-                  </div>
-                </div>
-
-                <button type="submit" name="update_notifications" class="btn btn-primary btn-full" style="margin-top: 20px;">
-                  <i class="feather icon-save"></i>
-                  <span>Save Preferences</span>
                 </button>
               </form>
             </div>
@@ -1121,6 +1008,27 @@ if (isset($_POST['update_notifications'])) {
         }, 5000);
       });
     });
+
+    // Budget auto-calculation
+    function updateBudgets(changedField) {
+      const daily = parseFloat(document.getElementById('daily_budget').value) || 0;
+      const weekly = parseFloat(document.getElementById('weekly_budget').value) || 0;
+      const monthly = parseFloat(document.getElementById('monthly_budget').value) || 0;
+
+      if (changedField === 'daily' && daily > 0) {
+        // Daily changed: calculate weekly (7 days) and monthly (30 days)
+        document.getElementById('weekly_budget').value = (daily * 7).toFixed(2);
+        document.getElementById('monthly_budget').value = (daily * 30).toFixed(2);
+      } else if (changedField === 'weekly' && weekly > 0) {
+        // Weekly changed: calculate daily (weekly/7) and monthly (weekly*4.33)
+        document.getElementById('daily_budget').value = (weekly / 7).toFixed(2);
+        document.getElementById('monthly_budget').value = (weekly * 4.33).toFixed(2);
+      } else if (changedField === 'monthly' && monthly > 0) {
+        // Monthly changed: calculate daily (monthly/30) and weekly (monthly/4.33)
+        document.getElementById('daily_budget').value = (monthly / 30).toFixed(2);
+        document.getElementById('weekly_budget').value = (monthly / 4.33).toFixed(2);
+      }
+    }
 
     // Password confirmation validation
     const newPasswordInput = document.querySelector('input[name="new_password"]');

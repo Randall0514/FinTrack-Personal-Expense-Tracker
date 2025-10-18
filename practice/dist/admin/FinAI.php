@@ -821,8 +821,12 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
       input.value = '';
       input.style.height = 'auto';
       
-      // Show typing indicator
-      document.getElementById('typingIndicator').classList.add('active');
+      // Move typing indicator to bottom and show it
+      const typingIndicator = document.getElementById('typingIndicator');
+      const messagesContainer = document.getElementById('chatMessages');
+      messagesContainer.appendChild(typingIndicator);
+      typingIndicator.classList.add('active');
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
       
       try {
         // Call backend API
@@ -837,7 +841,7 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
         const data = await response.json();
         
         // Hide typing indicator
-        document.getElementById('typingIndicator').classList.remove('active');
+        typingIndicator.classList.remove('active');
         
         if (data.success) {
           addMessage(data.response, 'ai');
@@ -860,7 +864,8 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
         }
       } catch (error) {
         // Hide typing indicator
-        document.getElementById('typingIndicator').classList.remove('active');
+        const typingIndicator = document.getElementById('typingIndicator');
+        typingIndicator.classList.remove('active');
         
         addMessage('❌ Network Error: Could not connect to the AI service. Please check your internet connection.<br><br><strong>Error:</strong> ' + error.message, 'ai');
         console.error('Fetch Error:', error);

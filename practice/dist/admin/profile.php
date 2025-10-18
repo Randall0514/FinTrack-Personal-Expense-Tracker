@@ -50,10 +50,7 @@ $userData['address'] = $userData['address'] ?? '';
 $userData['monthly_budget'] = $userData['monthly_budget'] ?? 15000.00;
 $userData['daily_budget'] = $userData['daily_budget'] ?? 500.00;
 $userData['weekly_budget'] = $userData['weekly_budget'] ?? 3000.00;
-$userData['currency'] = $userData['currency'] ?? 'PHP';
-$userData['notifications'] = $userData['notifications'] ?? 1;
 $userData['profile_picture'] = $userData['profile_picture'] ?? '../assets/images/default-avatar.png';
-$userData['member_since'] = isset($userData['created_at']) ? date('F Y', strtotime($userData['created_at'])) : 'January 2024';
 
 // Handle Export Data
 if (isset($_POST['export_data'])) {
@@ -81,7 +78,6 @@ if (isset($_POST['export_data'])) {
         fputcsv($output, ['Email', $userData['email']]);
         fputcsv($output, ['Phone', $userData['phone']]);
         fputcsv($output, ['Monthly Budget', $userData['monthly_budget']]);
-        fputcsv($output, ['Currency', $userData['currency']]);
     }
     
     fclose($output);
@@ -400,26 +396,6 @@ if (isset($_POST['export_data'])) {
     }
 
     .required { color: #ef4444; font-weight: 700; }
-
-    .notification-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 700;
-    }
-
-    .badge-success {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: white;
-    }
-
-    .badge-danger {
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-      color: white;
-    }
   </style>
 </head>
 
@@ -480,13 +456,6 @@ if (isset($_POST['export_data'])) {
                 <button type="button" class="btn btn-info btn-full" onclick="openModal('exportModal')">
                   <i class="feather icon-download"></i> Export My Data
                 </button>
-              </div>
-
-              <div class="info-box">
-                <h6 style="font-weight: 700; color: #667eea; margin-bottom: 10px;">
-                  <i class="feather icon-calendar"></i> Member Since
-                </h6>
-                <p style="color: #666; margin: 0;"><?php echo $userData['member_since']; ?></p>
               </div>
 
               <div class="info-box" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%); border-left: 4px solid #3b82f6;">
@@ -551,39 +520,6 @@ if (isset($_POST['export_data'])) {
                   <i class="feather icon-dollar-sign"></i> Monthly Budget
                 </div>
                 <div class="info-value">₱ <?php echo number_format($userData['monthly_budget'], 2); ?></div>
-              </div>
-
-              <div class="info-group">
-                <div class="info-label">
-                  <i class="feather icon-globe"></i> Currency
-                </div>
-                <div class="info-value">
-                  <?php 
-                    $currencies = [
-                      'PHP' => 'PHP - Philippine Peso',
-                      'USD' => 'USD - US Dollar',
-                      'EUR' => 'EUR - Euro'
-                    ];
-                    echo $currencies[$userData['currency']] ?? 'PHP - Philippine Peso';
-                  ?>
-                </div>
-              </div>
-
-              <div class="info-group">
-                <div class="info-label">
-                  <i class="feather icon-bell"></i> Email Notifications
-                </div>
-                <div class="info-value">
-                  <?php if ($userData['notifications']): ?>
-                    <span class="notification-badge badge-success">
-                      <i class="feather icon-check"></i> Enabled
-                    </span>
-                  <?php else: ?>
-                    <span class="notification-badge badge-danger">
-                      <i class="feather icon-x"></i> Disabled
-                    </span>
-                  <?php endif; ?>
-                </div>
               </div>
             </div>
           </div>

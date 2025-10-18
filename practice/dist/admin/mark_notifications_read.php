@@ -53,14 +53,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $currentMonth = date('Y-m');
         $weekStart = date('Y-m-d', strtotime('monday this week'));
         
-        // Mark all current notification types as read
+        // Mark ALL notification types as read (including INFO notifications)
         $notification_keys = [
-            'daily_budget_exceeded_' . $today,
+            // Daily notifications
+            'daily_budget_info_' . $today,
             'daily_budget_warning_' . $today,
-            'weekly_budget_exceeded_' . $weekStart,
+            'daily_budget_exceeded_' . $today,
+            
+            // Weekly notifications
+            'weekly_budget_info_' . $weekStart,
             'weekly_budget_warning_' . $weekStart,
-            'monthly_budget_exceeded_' . $currentMonth,
-            'monthly_budget_info_' . $currentMonth
+            'weekly_budget_exceeded_' . $weekStart,
+            
+            // Monthly notifications
+            'monthly_budget_info_' . $currentMonth,
+            'monthly_budget_warning_' . $currentMonth,
+            'monthly_budget_exceeded_' . $currentMonth
         ];
         
         // Set expiry times for each notification type
@@ -113,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 // Get recent expenses to mark as read (last 7 days)
                 $sevenDaysAgo = date('Y-m-d', strtotime('-7 days'));
                 $get_expenses = $conn->prepare("SELECT id FROM expenses 
-                    WHERE user_id = ? AND date >= ?");
+                    WHERE user_id = ? AND date >= ? ORDER BY date DESC LIMIT 50");
                 $get_expenses->bind_param("is", $user_id, $sevenDaysAgo);
                 $get_expenses->execute();
                 $expense_result = $get_expenses->get_result();

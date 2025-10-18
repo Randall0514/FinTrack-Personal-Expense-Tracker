@@ -79,50 +79,16 @@ foreach ($expenses as $expense) {
     }
 }
 
-// Generate all notifications using the helper function
-$allNotifications = [];
-
-// Calculate percentages
+// Calculate percentages (NO min() cap - we need real percentages)
 $dailyPercentage = $dailyBudget > 0 ? ($dailySpending / $dailyBudget) * 100 : 0;
 $weeklyPercentage = $weeklyBudget > 0 ? ($weeklySpending / $weeklyBudget) * 100 : 0;
 $monthlyPercentage = $monthlyBudget > 0 ? ($monthlySpending / $monthlyBudget) * 100 : 0;
 
+// Generate all notifications
+$allNotifications = [];
+
 // ==================== DAILY NOTIFICATIONS ====================
-// Check for INFO notification (60-79%)
-if ($dailyPercentage >= 60 && $dailyPercentage < 80) {
-    $key = 'daily_budget_info_' . $today;
-    if (!isNotificationDismissed($conn, $user_id, $key)) {
-        $allNotifications[] = [
-            'icon' => 'info',
-            'title' => 'Daily Budget Info',
-            'message' => 'You have used ' . number_format($dailyPercentage, 1) . '% of your daily budget (₱' . number_format($dailySpending, 2) . ' of ₱' . number_format($dailyBudget, 2) . ')',
-            'time' => date('h:i A'),
-            'date' => date('M d, Y'),
-            'type' => 'info',
-            'category' => 'Budget Alert',
-            'key' => $key
-        ];
-    }
-}
-
-// Check for WARNING notification (80%+)
-if ($dailyPercentage >= 80) {
-    $key = 'daily_budget_warning_' . $today;
-    if (!isNotificationDismissed($conn, $user_id, $key)) {
-        $allNotifications[] = [
-            'icon' => 'alert-triangle',
-            'title' => 'Daily Budget Warning',
-            'message' => 'You have used ' . number_format($dailyPercentage, 1) . '% of your daily budget (₱' . number_format($dailySpending, 2) . ' of ₱' . number_format($dailyBudget, 2) . ')',
-            'time' => date('h:i A'),
-            'date' => date('M d, Y'),
-            'type' => 'warning',
-            'category' => 'Budget Alert',
-            'key' => $key
-        ];
-    }
-}
-
-// Check for DANGER notification (exceeded budget)
+// Check for DANGER first (exceeded budget)
 if ($dailySpending > $dailyBudget) {
     $key = 'daily_budget_exceeded_' . $today;
     if (!isNotificationDismissed($conn, $user_id, $key)) {
@@ -138,16 +104,30 @@ if ($dailySpending > $dailyBudget) {
         ];
     }
 }
-
-// ==================== WEEKLY NOTIFICATIONS ====================
-// Check for INFO notification (60-79%)
-if ($weeklyPercentage >= 60 && $weeklyPercentage < 80) {
-    $key = 'weekly_budget_info_' . $weekStart;
+// Check for WARNING (80-100%)
+elseif ($dailyPercentage >= 80) {
+    $key = 'daily_budget_warning_' . $today;
+    if (!isNotificationDismissed($conn, $user_id, $key)) {
+        $allNotifications[] = [
+            'icon' => 'alert-triangle',
+            'title' => 'Daily Budget Warning',
+            'message' => 'You have used ' . number_format($dailyPercentage, 1) . '% of your daily budget (₱' . number_format($dailySpending, 2) . ' of ₱' . number_format($dailyBudget, 2) . ')',
+            'time' => date('h:i A'),
+            'date' => date('M d, Y'),
+            'type' => 'warning',
+            'category' => 'Budget Alert',
+            'key' => $key
+        ];
+    }
+}
+// Check for INFO (60-79%)
+elseif ($dailyPercentage >= 60) {
+    $key = 'daily_budget_info_' . $today;
     if (!isNotificationDismissed($conn, $user_id, $key)) {
         $allNotifications[] = [
             'icon' => 'info',
-            'title' => 'Weekly Budget Info',
-            'message' => 'You have used ' . number_format($weeklyPercentage, 1) . '% of your weekly budget (₱' . number_format($weeklySpending, 2) . ' of ₱' . number_format($weeklyBudget, 2) . ')',
+            'title' => 'Daily Budget Info',
+            'message' => 'You have used ' . number_format($dailyPercentage, 1) . '% of your daily budget (₱' . number_format($dailySpending, 2) . ' of ₱' . number_format($dailyBudget, 2) . ')',
             'time' => date('h:i A'),
             'date' => date('M d, Y'),
             'type' => 'info',
@@ -157,24 +137,8 @@ if ($weeklyPercentage >= 60 && $weeklyPercentage < 80) {
     }
 }
 
-// Check for WARNING notification (80%+)
-if ($weeklyPercentage >= 80) {
-    $key = 'weekly_budget_warning_' . $weekStart;
-    if (!isNotificationDismissed($conn, $user_id, $key)) {
-        $allNotifications[] = [
-            'icon' => 'alert-triangle',
-            'title' => 'Weekly Budget Alert',
-            'message' => 'You have used ' . number_format($weeklyPercentage, 1) . '% of your weekly budget (₱' . number_format($weeklySpending, 2) . ' of ₱' . number_format($weeklyBudget, 2) . ')',
-            'time' => date('h:i A'),
-            'date' => date('M d, Y'),
-            'type' => 'warning',
-            'category' => 'Budget Alert',
-            'key' => $key
-        ];
-    }
-}
-
-// Check for DANGER notification (exceeded budget)
+// ==================== WEEKLY NOTIFICATIONS ====================
+// Check for DANGER first (exceeded budget)
 if ($weeklySpending > $weeklyBudget) {
     $key = 'weekly_budget_exceeded_' . $weekStart;
     if (!isNotificationDismissed($conn, $user_id, $key)) {
@@ -190,27 +154,58 @@ if ($weeklySpending > $weeklyBudget) {
         ];
     }
 }
-
-// ==================== MONTHLY NOTIFICATIONS ====================
-// Check for INFO notification (60-79%)
-if ($monthlyPercentage >= 60 && $monthlyPercentage < 80) {
-    $key = 'monthly_budget_info_' . $currentMonth;
+// Check for WARNING (80-100%)
+elseif ($weeklyPercentage >= 80) {
+    $key = 'weekly_budget_warning_' . $weekStart;
+    if (!isNotificationDismissed($conn, $user_id, $key)) {
+        $allNotifications[] = [
+            'icon' => 'alert-triangle',
+            'title' => 'Weekly Budget Alert',
+            'message' => 'You have used ' . number_format($weeklyPercentage, 1) . '% of your weekly budget (₱' . number_format($weeklySpending, 2) . ' of ₱' . number_format($weeklyBudget, 2) . ')',
+            'time' => date('h:i A'),
+            'date' => date('M d, Y'),
+            'type' => 'warning',
+            'category' => 'Budget Alert',
+            'key' => $key
+        ];
+    }
+}
+// Check for INFO (60-79%)
+elseif ($weeklyPercentage >= 60) {
+    $key = 'weekly_budget_info_' . $weekStart;
     if (!isNotificationDismissed($conn, $user_id, $key)) {
         $allNotifications[] = [
             'icon' => 'info',
-            'title' => 'Monthly Budget Info',
-            'message' => 'You have used ' . number_format($monthlyPercentage, 1) . '% of your monthly budget (₱' . number_format($monthlySpending, 2) . ' of ₱' . number_format($monthlyBudget, 2) . ')',
+            'title' => 'Weekly Budget Info',
+            'message' => 'You have used ' . number_format($weeklyPercentage, 1) . '% of your weekly budget (₱' . number_format($weeklySpending, 2) . ' of ₱' . number_format($weeklyBudget, 2) . ')',
             'time' => date('h:i A'),
             'date' => date('M d, Y'),
             'type' => 'info',
-            'category' => 'Budget Info',
+            'category' => 'Budget Alert',
             'key' => $key
         ];
     }
 }
 
-// Check for WARNING notification (80%+)
-if ($monthlyPercentage >= 80) {
+// ==================== MONTHLY NOTIFICATIONS ====================
+// Check for DANGER first (exceeded budget)
+if ($monthlySpending > $monthlyBudget) {
+    $key = 'monthly_budget_exceeded_' . $currentMonth;
+    if (!isNotificationDismissed($conn, $user_id, $key)) {
+        $allNotifications[] = [
+            'icon' => 'alert-circle',
+            'title' => 'Monthly Budget Exceeded!',
+            'message' => 'You have exceeded your monthly budget by ₱' . number_format($monthlySpending - $monthlyBudget, 2) . ' (₱' . number_format($monthlySpending, 2) . ' of ₱' . number_format($monthlyBudget, 2) . ')',
+            'time' => date('h:i A'),
+            'date' => date('M d, Y'),
+            'type' => 'danger',
+            'category' => 'Budget Alert',
+            'key' => $key
+        ];
+    }
+}
+// Check for WARNING (80-100%)
+elseif ($monthlyPercentage >= 80) {
     $key = 'monthly_budget_warning_' . $currentMonth;
     if (!isNotificationDismissed($conn, $user_id, $key)) {
         $allNotifications[] = [
@@ -225,19 +220,18 @@ if ($monthlyPercentage >= 80) {
         ];
     }
 }
-
-// Check for DANGER notification (exceeded budget)
-if ($monthlySpending > $monthlyBudget) {
-    $key = 'monthly_budget_exceeded_' . $currentMonth;
+// Check for INFO (60-79%)
+elseif ($monthlyPercentage >= 60) {
+    $key = 'monthly_budget_info_' . $currentMonth;
     if (!isNotificationDismissed($conn, $user_id, $key)) {
         $allNotifications[] = [
-            'icon' => 'alert-circle',
-            'title' => 'Monthly Budget Exceeded!',
-            'message' => 'You have exceeded your monthly budget by ₱' . number_format($monthlySpending - $monthlyBudget, 2) . ' (₱' . number_format($monthlySpending, 2) . ' of ₱' . number_format($monthlyBudget, 2) . ')',
+            'icon' => 'info',
+            'title' => 'Monthly Budget Info',
+            'message' => 'You have used ' . number_format($monthlyPercentage, 1) . '% of your monthly budget (₱' . number_format($monthlySpending, 2) . ' of ₱' . number_format($monthlyBudget, 2) . ')',
             'time' => date('h:i A'),
             'date' => date('M d, Y'),
-            'type' => 'danger',
-            'category' => 'Budget Alert',
+            'type' => 'info',
+            'category' => 'Budget Info',
             'key' => $key
         ];
     }
@@ -310,13 +304,11 @@ $totalNotifications = count($allNotifications);
         .pc-container { background: transparent !important; }
         .pc-content { padding: 20px; }
 
-        /* Full width view adjustments */
         .pc-container.full-width {
             margin-left: 0 !important;
             width: 100% !important;
         }
 
-        /* Page Header */
         .page-header {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
@@ -344,7 +336,6 @@ $totalNotifications = count($allNotifications);
             font-weight: 600;
         }
 
-        /* Cards */
         .card {
             background: rgba(255, 255, 255, 0.95) !important;
             backdrop-filter: blur(10px);
@@ -378,7 +369,6 @@ $totalNotifications = count($allNotifications);
 
         .card-body { padding: 25px !important; }
 
-        /* Stats Cards */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -426,7 +416,6 @@ $totalNotifications = count($allNotifications);
             font-weight: 700;
         }
 
-        /* Filter Section */
         .filter-section {
             background: rgba(255, 255, 255, 0.1);
             padding: 15px;
@@ -468,11 +457,6 @@ $totalNotifications = count($allNotifications);
             cursor: not-allowed;
         }
 
-        .filter-btn .icon-loader {
-            animation: spin 1s linear infinite;
-        }
-
-        /* Notification Item */
         .notification-item {
             background: white;
             padding: 20px;
@@ -544,7 +528,6 @@ $totalNotifications = count($allNotifications);
             white-space: nowrap;
         }
 
-        /* Empty State */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -566,7 +549,6 @@ $totalNotifications = count($allNotifications);
             color: #666;
         }
 
-        /* Animations */
         @keyframes slideIn {
             from {
                 opacity: 0;
@@ -618,7 +600,6 @@ $totalNotifications = count($allNotifications);
     </div>
 
     <?php 
-    // Check if coming from "view all" link
     $hideLayout = isset($_GET['view']) && $_GET['view'] === 'all';
     
     if (!$hideLayout) {
@@ -629,7 +610,6 @@ $totalNotifications = count($allNotifications);
 
     <div class="pc-container" <?php echo $hideLayout ? 'style="margin-left: 0 !important; width: 100% !important;"' : ''; ?>>
         <div class="pc-content" <?php echo $hideLayout ? 'style="padding-top: 20px !important;"' : ''; ?>>
-            <!-- Page Header -->
             <div class="page-header">
                 <div class="page-block">
                     <div class="page-header-title">
@@ -656,7 +636,6 @@ $totalNotifications = count($allNotifications);
                 </div>
             </div>
 
-            <!-- Stats Overview -->
             <div class="stats-grid">
                 <div class="stat-card hoverable">
                     <div class="stat-icon">
@@ -699,7 +678,6 @@ $totalNotifications = count($allNotifications);
                 </div>
             </div>
 
-            <!-- Filters -->
             <div class="filter-section">
                 <select id="filterType" onchange="filterNotifications()">
                     <option value="all">All Types</option>
@@ -732,7 +710,6 @@ $totalNotifications = count($allNotifications);
                 <?php endif; ?>
             </div>
 
-            <!-- Notifications List -->
             <div class="card">
                 <div class="card-header">
                     <h5>📋 All Notifications</h5>
@@ -781,7 +758,6 @@ $totalNotifications = count($allNotifications);
                         <?php endif; ?>
                     </div>
 
-                    <!-- No Results -->
                     <div id="noResults" class="empty-state" style="display: none;">
                         <i class="feather icon-search"></i>
                         <h4>No Results Found</h4>
@@ -843,21 +819,17 @@ $totalNotifications = count($allNotifications);
         }
 
         function resetFilters() {
-            // Reset all filter inputs
             document.getElementById('filterType').value = 'all';
             document.getElementById('filterCategory').value = 'all';
             document.getElementById('searchNotification').value = '';
             
-            // Show all notifications
             const notifications = document.querySelectorAll('.notification-item');
             notifications.forEach(notification => {
                 notification.style.display = 'flex';
             });
             
-            // Hide no results message
             document.getElementById('noResults').style.display = 'none';
             
-            // Show empty state if there are no notifications at all
             const emptyState = document.querySelector('.empty-state:not(#noResults)');
             if (emptyState && notifications.length === 0) {
                 emptyState.style.display = 'block';
@@ -865,18 +837,15 @@ $totalNotifications = count($allNotifications);
         }
 
         function deleteAllNotifications() {
-            // Show confirmation dialog
             if (!confirm('Are you sure you want to delete all notifications? This action cannot be undone.')) {
                 return;
             }
 
-            // Show loading state
             const deleteBtn = event.target.closest('button');
             const originalHTML = deleteBtn.innerHTML;
             deleteBtn.disabled = true;
             deleteBtn.innerHTML = '<i class="feather icon-loader"></i> Deleting...';
 
-            // Send AJAX request
             fetch('delete_notifications.php', {
                 method: 'POST',
                 headers: {
@@ -887,10 +856,8 @@ $totalNotifications = count($allNotifications);
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Show success message
                     alert('✅ ' + data.message);
                     
-                    // Animate notifications out
                     const notifications = document.querySelectorAll('.notification-item');
                     notifications.forEach((notification, index) => {
                         setTimeout(() => {
@@ -898,7 +865,6 @@ $totalNotifications = count($allNotifications);
                         }, index * 50);
                     });
 
-                    // Reload page after animation
                     setTimeout(() => {
                         location.reload();
                     }, notifications.length * 50 + 500);

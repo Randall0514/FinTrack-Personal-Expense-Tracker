@@ -474,8 +474,20 @@ $categories = [
     .budget-value {
       display: block;
       font-size: 1.1rem;
-      color: white;
       font-weight: 700;
+    }
+
+    /* Color coding for budget values */
+    .budget-value.safe {
+      color: #6ee7b7; /* Green for safe/budget */
+    }
+
+    .budget-value.warning {
+      color: #fcd34d; /* Yellow for warning */
+    }
+
+    .budget-value.danger {
+      color: #fca5a5; /* Red for danger/expenses */
     }
     
 
@@ -673,12 +685,12 @@ $categories = [
             <h6>📆 Monthly Budget</h6>
             <div class="budget-amounts">
               <div class="budget-amount-item">
-                <span class="budget-label">Expenses</span>
-                <span class="budget-value">₱ <?php echo number_format($monthlySpending, 2); ?></span>
+                <span class="budget-label">Budget Limit</span>
+                <span class="budget-value safe">₱ <?php echo number_format($monthlyBudget, 2); ?></span>
               </div>
               <div class="budget-amount-item">
-                <span class="budget-label">Budget Limit</span>
-                <span class="budget-value">₱ <?php echo number_format($monthlyBudget, 2); ?></span>
+                <span class="budget-label">Expenses</span>
+                <span class="budget-value <?php echo $monthlyPercentage >= 80 ? 'danger' : ($monthlyPercentage >= 60 ? 'warning' : 'safe'); ?>">₱ <?php echo number_format($monthlySpending, 2); ?></span>
               </div>
             </div>
             <div class="progress-bar-wrapper">
@@ -697,12 +709,12 @@ $categories = [
             <h6>📅 Weekly Budget</h6>
             <div class="budget-amounts">
               <div class="budget-amount-item">
-                <span class="budget-label">Expenses</span>
-                <span class="budget-value">₱ <?php echo number_format($weeklySpending, 2); ?></span>
+                <span class="budget-label">Budget Limit</span>
+                <span class="budget-value safe">₱ <?php echo number_format($weeklyBudget, 2); ?></span>
               </div>
               <div class="budget-amount-item">
-                <span class="budget-label">Budget Limit</span>
-                <span class="budget-value">₱ <?php echo number_format($weeklyBudget, 2); ?></span>
+                <span class="budget-label">Expenses</span>
+                <span class="budget-value <?php echo $weeklyPercentage >= 80 ? 'danger' : ($weeklyPercentage >= 60 ? 'warning' : 'safe'); ?>">₱ <?php echo number_format($weeklySpending, 2); ?></span>
               </div>
             </div>
             <div class="progress-bar-wrapper">
@@ -721,12 +733,12 @@ $categories = [
             <h6>💰 Daily Budget</h6>
             <div class="budget-amounts">
               <div class="budget-amount-item">
-                <span class="budget-label">Expenses</span>
-                <span class="budget-value">₱ <?php echo number_format($dailySpending, 2); ?></span>
+                <span class="budget-label">Budget Limit</span>
+                <span class="budget-value safe">₱ <?php echo number_format($dailyBudget, 2); ?></span>
               </div>
               <div class="budget-amount-item">
-                <span class="budget-label">Budget Limit</span>
-                <span class="budget-value">₱ <?php echo number_format($dailyBudget, 2); ?></span>
+                <span class="budget-label">Expenses</span>
+                <span class="budget-value <?php echo $dailyPercentage >= 80 ? 'danger' : ($dailyPercentage >= 60 ? 'warning' : 'safe'); ?>">₱ <?php echo number_format($dailySpending, 2); ?></span>
               </div>
             </div>
             <div class="progress-bar-wrapper">
