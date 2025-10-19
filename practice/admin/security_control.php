@@ -122,18 +122,100 @@ if ($tableCheck->num_rows == 0) {
     $createTable = "CREATE TABLE login_attempts (
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(255) NOT NULL,
-        ip_address VARCHAR(45) NOT NULL,
+        email VARCHAR(255) NOT NULL,
         success BOOLEAN DEFAULT FALSE,
         attempt_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_attempt_time (attempt_time),
-        INDEX idx_success (success)
+        INDEX idx_success (success),
+        INDEX idx_email (email)
     )";
     $conn->query($createTable);
+} else {
+    // Check if email column exists, if not add it
+    $columnCheck = $conn->query("SHOW COLUMNS FROM login_attempts LIKE 'email'");
+    if ($columnCheck->num_rows == 0) {
+        // Add email column
+        $conn->query("ALTER TABLE login_attempts ADD COLUMN email VARCHAR(255) NOT NULL DEFAULT '' AFTER username");
+        $conn->query("ALTER TABLE login_attempts ADD INDEX idx_email (email)");
+        
+        // Update existing records with placeholder email if username exists
+        $conn->query("UPDATE login_attempts SET email = CONCAT(username, '@example.com') WHERE email = ''");
+    }
 }
+
+// Handle delete single attempt
+if (isset($_POST['delete_attempt'])) {
+    $attempt_id = $_POST['attempt_id'];
+    $stmt = $conn->prepare("DELETE FROM login_attempts WHERE id = ?");
+    $stmt->bind_param("i", $attempt_id);
+    if ($stmt->execute()) {
+        $message = "Login attempt deleted successfully!";
+    } else {
+        $message = "Error deleting login attempt: " . $conn->error;
+    }
+}
+
+// Handle clear all attempts
+if (isset($_POST['clear_all_attempts'])) {
+    if ($conn->query("DELETE FROM login_attempts")) {
+        $message = "All login attempts cleared successfully!";
+    } else {
+        $message = "Error clearing login attempts: " . $conn->error;
+    }
+}
+
+// Handle clear failed attempts only
+if (isset($_POST['clear_failed_attempts'])) {
+    if ($conn->query("DELETE FROM login_attempts WHERE success = 0")) {
+        $message = "Failed login attempts cleared successfully!";
+    } else {
+        $message = "Error clearing failed attempts: " . $conn->error;
+    }
+}
+
+// Handle clear old attempts (older than 30 days)
+if (isset($_POST['clear_old_attempts'])) {
+    if ($conn->query("DELETE FROM login_attempts WHERE attempt_time < DATE_SUB(NOW(), INTERVAL 30 DAY)")) {
+        $message = "Old login attempts cleared successfully!";
+    } else {
+        $message = "Error clearing old attempts: " . $conn->error;
+    }
+}
+
+// Get filter and sort parameters
+$search = isset($_GET['search']) ? $_GET['search'] : '';
+$status_filter = isset($_GET['status']) ? $_GET['status'] : '';
+$sort_by = isset($_GET['sort']) ? $_GET['sort'] : 'attempt_time';
+$sort_order = isset($_GET['order']) ? $_GET['order'] : 'DESC';
+
+// Build query with filters
+$query = "SELECT * FROM login_attempts WHERE 1=1";
+
+if (!empty($search)) {
+    $search_term = '%' . $conn->real_escape_string($search) . '%';
+    $query .= " AND (username LIKE '$search_term' OR email LIKE '$search_term')";
+}
+
+if ($status_filter !== '') {
+    $query .= " AND success = " . ($status_filter === 'success' ? '1' : '0');
+}
+
+// Validate sort column
+$allowed_sorts = ['username', 'email', 'success', 'attempt_time'];
+if (!in_array($sort_by, $allowed_sorts)) {
+    $sort_by = 'attempt_time';
+}
+
+// Validate sort order
+if (!in_array(strtoupper($sort_order), ['ASC', 'DESC'])) {
+    $sort_order = 'DESC';
+}
+
+$query .= " ORDER BY $sort_by $sort_order LIMIT 50";
 
 // Get login attempts
 $login_attempts = [];
-$result = $conn->query("SELECT * FROM login_attempts ORDER BY attempt_time DESC LIMIT 50");
+$result = $conn->query($query);
 if ($result) {
     while ($row = $result->fetch_assoc()) {
         $login_attempts[] = $row;
@@ -148,18 +230,40 @@ $total_users = $result ? $result->fetch_assoc()['total'] : 0;
 $result = $conn->query("SELECT COUNT(*) as count FROM login_attempts");
 $count = $result->fetch_assoc()['count'];
 if ($count == 0) {
-    // Insert some failed login attempts
-    $conn->query("INSERT INTO login_attempts (username, ip_address, success, attempt_time) 
-                 VALUES ('test_user', '127.0.0.1', 0, NOW()),
-                        ('another_user', '127.0.0.1', 0, NOW()),
-                        ('admin', '127.0.0.1', 0, NOW())");
+    // Get real users from database to use their actual emails
+    $usersResult = $conn->query("SELECT id, username, email FROM users LIMIT 10");
     
-    // Insert some successful login attempts
-    $conn->query("INSERT INTO login_attempts (username, ip_address, success, attempt_time) 
-                 VALUES ('valid_user', '127.0.0.1', 1, NOW()),
-                        ('admin', '127.0.0.1', 1, NOW()),
-                        ('test_user', '127.0.0.1', 1, NOW()),
-                        ('another_user', '127.0.0.1', 1, NOW())");
+    if ($usersResult && $usersResult->num_rows > 0) {
+        $realUsers = $usersResult->fetch_all(MYSQLI_ASSOC);
+        
+        // Insert login attempts with real user data
+        foreach ($realUsers as $index => $user) {
+            $username = $user['username'];
+            $email = $user['email'];
+            
+            // Insert some failed attempts for variety
+            if ($index % 3 == 0) {
+                $conn->query("INSERT INTO login_attempts (username, email, success, attempt_time) 
+                             VALUES ('$username', '$email', 0, DATE_SUB(NOW(), INTERVAL " . rand(1, 48) . " HOUR))");
+            }
+            
+            // Insert successful login
+            $conn->query("INSERT INTO login_attempts (username, email, success, attempt_time) 
+                         VALUES ('$username', '$email', 1, DATE_SUB(NOW(), INTERVAL " . rand(1, 24) . " HOUR))");
+        }
+    } else {
+        // Fallback to dummy data if no users exist
+        $conn->query("INSERT INTO login_attempts (username, email, success, attempt_time) 
+                     VALUES ('test_user', 'test@example.com', 0, NOW()),
+                            ('another_user', 'another@example.com', 0, NOW()),
+                            ('admin', 'admin@example.com', 0, NOW())");
+        
+        $conn->query("INSERT INTO login_attempts (username, email, success, attempt_time) 
+                     VALUES ('valid_user', 'valid@example.com', 1, NOW()),
+                            ('admin', 'admin@example.com', 1, NOW()),
+                            ('test_user', 'test@example.com', 1, NOW()),
+                            ('another_user', 'another@example.com', 1, NOW())");
+    }
 }
 
 $result = $conn->query("SELECT COUNT(*) as total FROM login_attempts WHERE success = 0 AND attempt_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)");
@@ -191,6 +295,19 @@ if ($tableCheck->num_rows == 0) {
 // Get active sessions
 $result = $conn->query("SELECT COUNT(*) as total FROM sessions WHERE last_activity > DATE_SUB(NOW(), INTERVAL 1 HOUR)");
 $active_sessions = $result && $result->num_rows > 0 ? $result->fetch_assoc()['total'] : 0;
+
+// Helper function to get sort icon
+function getSortIcon($column, $current_sort, $current_order) {
+    if ($column === $current_sort) {
+        return $current_order === 'ASC' ? '↑' : '↓';
+    }
+    return '⇅';
+}
+
+// Helper function to toggle sort order
+function toggleOrder($current_order) {
+    return $current_order === 'ASC' ? 'DESC' : 'ASC';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -481,18 +598,6 @@ $active_sessions = $result && $result->num_rows > 0 ? $result->fetch_assoc()['to
         margin-right: 4px;
     }
     
-    .stat-trend.positive {
-        color: #48bb78;
-    }
-    
-    .stat-trend.negative {
-        color: #e53e3e;
-    }
-    
-    .stat-trend.neutral {
-        color: #4299e1;
-    }
-    
     /* Alerts */
     .alert {
         padding: 18px 24px;
@@ -531,97 +636,6 @@ $active_sessions = $result && $result->num_rows > 0 ? $result->fetch_assoc()['to
 
     .alert i {
         font-size: 20px;
-    }
-
-    /* Dashboard Cards */
-    .dashboard-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 25px;
-        margin-bottom: 40px;
-    }
-
-    .stat-card {
-        background: white;
-        border-radius: 16px;
-        padding: 25px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-        transition: all 0.3s ease;
-        border: 1px solid #f0f4f8;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: var(--card-color);
-    }
-
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    }
-
-    .stat-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 20px;
-    }
-
-    .stat-icon {
-        width: 52px;
-        height: 52px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 22px;
-        color: white;
-        background: var(--card-color);
-    }
-
-    .stat-value {
-        font-size: 36px;
-        font-weight: 700;
-        color: #1a202c;
-        line-height: 1;
-        margin-bottom: 8px;
-    }
-
-    .stat-label {
-        font-size: 14px;
-        color: #718096;
-        font-weight: 500;
-    }
-
-    .stat-trend {
-        font-size: 13px;
-        margin-top: 12px;
-        padding-top: 12px;
-        border-top: 1px solid #f0f4f8;
-        font-weight: 500;
-    }
-
-    .stat-trend i {
-        margin-right: 4px;
-    }
-
-    .trend-up {
-        color: #48bb78;
-    }
-
-    .trend-down {
-        color: #f56565;
-    }
-
-    .trend-neutral {
-        color: #4299e1;
     }
 
     /* Data Card */
@@ -730,6 +744,61 @@ $active_sessions = $result && $result->num_rows > 0 ? $result->fetch_assoc()['to
         margin: 0;
     }
 
+    /* Search and Filter Bar */
+    .filter-bar {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .search-box {
+        flex: 1;
+        min-width: 250px;
+        position: relative;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 12px 16px 12px 45px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+
+    .search-box input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .search-box i {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #718096;
+    }
+
+    .filter-select {
+        padding: 12px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 14px;
+        cursor: pointer;
+        background: white;
+        transition: all 0.3s ease;
+        min-width: 150px;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
     /* Buttons */
     .btn {
         padding: 12px 24px;
@@ -755,8 +824,52 @@ $active_sessions = $result && $result->num_rows > 0 ? $result->fetch_assoc()['to
         box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
     }
 
-    .btn-primary i {
-        font-size: 16px;
+    .btn-danger {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+    }
+
+    .btn-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+        color: #2d3748;
+        box-shadow: 0 4px 12px rgba(253, 203, 110, 0.3);
+    }
+
+    .btn-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(253, 203, 110, 0.4);
+    }
+
+    .btn-secondary {
+        background: #e2e8f0;
+        color: #2d3748;
+    }
+
+    .btn-secondary:hover {
+        background: #cbd5e0;
+        transform: translateY(-2px);
+    }
+
+    .btn-sm {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+
+    .btn i {
+        font-size: 14px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
     }
 
     /* Tables */
@@ -779,6 +892,13 @@ $active_sessions = $result && $result->num_rows > 0 ? $result->fetch_assoc()['to
         background: #f7fafc;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+    }
+
+    th:hover {
+        background: #edf2f7;
     }
 
     th:first-child {
@@ -787,6 +907,11 @@ $active_sessions = $result && $result->num_rows > 0 ? $result->fetch_assoc()['to
 
     th:last-child {
         border-radius: 0 10px 10px 0;
+    }
+
+    .sort-icon {
+        margin-left: 5px;
+        opacity: 0.5;
     }
 
     td {
@@ -844,6 +969,76 @@ $active_sessions = $result && $result->num_rows > 0 ? $result->fetch_assoc()['to
         font-weight: 500;
     }
 
+    /* Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 2000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        animation: fadeIn 0.3s ease;
+    }
+
+    .modal.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .modal-header {
+        margin-bottom: 20px;
+    }
+
+    .modal-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: #1a202c;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .modal-body {
+        margin-bottom: 25px;
+        color: #4a5568;
+        line-height: 1.6;
+    }
+
+    .modal-footer {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
     /* Responsive Design */
     @media (max-width: 1200px) {
         .dashboard-cards {
@@ -895,6 +1090,23 @@ $active_sessions = $result && $result->num_rows > 0 ? $result->fetch_assoc()['to
 
         .form-row {
             grid-template-columns: 1fr;
+        }
+
+        .filter-bar {
+            flex-direction: column;
+        }
+
+        .search-box {
+            width: 100%;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .action-buttons .btn {
+            width: 100%;
+            justify-content: center;
         }
     }
 
@@ -1070,19 +1282,72 @@ $active_sessions = $result && $result->num_rows > 0 ? $result->fetch_assoc()['to
                 <div class="card-header">
                     <div><div class="card-title">Recent Login Attempts</div><div class="page-subtitle">Monitor authentication activity and detect suspicious behavior</div></div>
                 </div>
+                
+                <form method="GET" class="filter-bar">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" name="search" placeholder="Search by username or email..." value="<?php echo htmlspecialchars($search); ?>">
+                    </div>
+                    <select name="status" class="filter-select" onchange="this.form.submit()">
+                        <option value="">All Status</option>
+                        <option value="success" <?php echo $status_filter === 'success' ? 'selected' : ''; ?>>Success Only</option>
+                        <option value="failed" <?php echo $status_filter === 'failed' ? 'selected' : ''; ?>>Failed Only</option>
+                    </select>
+                    <button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-filter"></i> Filter</button>
+                    <?php if (!empty($search) || $status_filter !== ''): ?>
+                        <a href="security_control.php" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i> Clear</a>
+                    <?php endif; ?>
+                </form>
+
+                <div class="action-buttons">
+                    <button onclick="showModal('clearFailedModal')" class="btn btn-warning btn-sm">
+                        <i class="fas fa-broom"></i> Clear Failed Attempts
+                    </button>
+                    <button onclick="showModal('clearOldModal')" class="btn btn-warning btn-sm">
+                        <i class="fas fa-calendar-times"></i> Clear Old Attempts (30+ days)
+                    </button>
+                    <button onclick="showModal('clearAllModal')" class="btn btn-danger btn-sm">
+                        <i class="fas fa-trash-alt"></i> Clear All Attempts
+                    </button>
+                </div>
+                
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th>Username</th><th>IP Address</th><th>Status</th><th>Time</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('username')">
+                                    Username <span class="sort-icon"><?php echo getSortIcon('username', $sort_by, $sort_order); ?></span>
+                                </th>
+                                <th onclick="sortTable('email')">
+                                    Email <span class="sort-icon"><?php echo getSortIcon('email', $sort_by, $sort_order); ?></span>
+                                </th>
+                                <th onclick="sortTable('success')">
+                                    Status <span class="sort-icon"><?php echo getSortIcon('success', $sort_by, $sort_order); ?></span>
+                                </th>
+                                <th onclick="sortTable('attempt_time')">
+                                    Time <span class="sort-icon"><?php echo getSortIcon('attempt_time', $sort_by, $sort_order); ?></span>
+                                </th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             <?php if (empty($login_attempts)): ?>
-                                <tr><td colspan="4"><div class="empty-state"><i class="fas fa-clipboard-list"></i><div class="empty-state-text">No login attempts recorded yet</div></div></td></tr>
+                                <tr><td colspan="5"><div class="empty-state"><i class="fas fa-clipboard-list"></i><div class="empty-state-text">No login attempts found</div></div></td></tr>
                             <?php else: ?>
                                 <?php foreach ($login_attempts as $attempt): ?>
                                     <tr>
                                         <td style="font-weight: 600;"><i class="fas fa-user" style="color: #667eea; margin-right: 8px;"></i><?php echo htmlspecialchars($attempt['username']); ?></td>
-                                        <td style="color: #718096;"><i class="fas fa-network-wired" style="margin-right: 8px;"></i><?php echo htmlspecialchars($attempt['ip_address']); ?></td>
+                                        <td style="color: #718096;"><i class="fas fa-envelope" style="margin-right: 8px;"></i><?php echo htmlspecialchars(isset($attempt['email']) ? $attempt['email'] : 'N/A'); ?></td>
                                         <td><span class="status-badge <?php echo $attempt['success'] ? 'status-success' : 'status-failed'; ?>"><i class="fas <?php echo $attempt['success'] ? 'fa-check-circle' : 'fa-times-circle'; ?>"></i><?php echo $attempt['success'] ? 'Success' : 'Failed'; ?></span></td>
                                         <td style="color: #718096;"><i class="fas fa-clock" style="margin-right: 8px;"></i><?php echo date('M d, Y H:i:s', strtotime($attempt['attempt_time'])); ?></td>
+                                        <td>
+                                            <form method="POST" style="display: inline;">
+                                                <input type="hidden" name="attempt_id" value="<?php echo $attempt['id']; ?>">
+                                                <button type="submit" name="delete_attempt" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this login attempt?')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -1092,5 +1357,97 @@ $active_sessions = $result && $result->num_rows > 0 ? $result->fetch_assoc()['to
             </div>
         </div>
     </div>
+
+    <!-- Modals -->
+    <div id="clearFailedModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-exclamation-triangle" style="color: #f5576c;"></i> Clear Failed Attempts</div>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete all failed login attempts? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button onclick="hideModal('clearFailedModal')" class="btn btn-secondary">Cancel</button>
+                <form method="POST" style="display: inline;">
+                    <button type="submit" name="clear_failed_attempts" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Clear Failed
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="clearOldModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-calendar-times" style="color: #fdcb6e;"></i> Clear Old Attempts</div>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete all login attempts older than 30 days? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button onclick="hideModal('clearOldModal')" class="btn btn-secondary">Cancel</button>
+                <form method="POST" style="display: inline;">
+                    <button type="submit" name="clear_old_attempts" class="btn btn-warning">
+                        <i class="fas fa-calendar-times"></i> Clear Old
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="clearAllModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-exclamation-circle" style="color: #e53e3e;"></i> Clear All Attempts</div>
+            </div>
+            <div class="modal-body">
+                <strong>Warning:</strong> This will permanently delete ALL login attempts from the database. This action cannot be undone. Are you absolutely sure?
+            </div>
+            <div class="modal-footer">
+                <button onclick="hideModal('clearAllModal')" class="btn btn-secondary">Cancel</button>
+                <form method="POST" style="display: inline;">
+                    <button type="submit" name="clear_all_attempts" class="btn btn-danger">
+                        <i class="fas fa-trash-alt"></i> Delete All
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+
+        function hideModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('show');
+            }
+        }
+
+        function sortTable(column) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentSort = urlParams.get('sort');
+            const currentOrder = urlParams.get('order') || 'DESC';
+            
+            // If clicking the same column, toggle order
+            if (currentSort === column) {
+                urlParams.set('order', currentOrder === 'ASC' ? 'DESC' : 'ASC');
+            } else {
+                // New column, default to DESC
+                urlParams.set('sort', column);
+                urlParams.set('order', 'DESC');
+            }
+            
+            window.location.search = urlParams.toString();
+        }
+    </script>
 </body>
 </html>
