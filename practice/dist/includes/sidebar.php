@@ -484,7 +484,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </li>
 
         <li>
-          <a href="../admin/FinAI.php" class="menu-item <?php echo ($current_page == 'categories.php') ? 'active' : ''; ?>">
+          <a href="../admin/FinAI.php" class="menu-item <?php echo ($current_page == 'FinAI.php') ? 'active' : ''; ?>">
             <i data-feather="cpu" width="20"></i>
             <span>FinAI</span>
           </a>

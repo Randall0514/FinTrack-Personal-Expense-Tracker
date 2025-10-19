@@ -128,10 +128,202 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
       font-weight: 600;
     }
 
+    /* Internet Check Modal */
+    .internet-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .internet-modal {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.4s ease-out;
+      text-align: center;
+    }
+
+    .modal-icon {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 25px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      animation: pulse 2s infinite;
+    }
+
+    .modal-icon.checking {
+      animation: spin 1s linear infinite, pulse 2s infinite;
+    }
+
+    .modal-icon.success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      animation: scaleIn 0.5s ease-out;
+    }
+
+    .modal-icon.error {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      animation: shake 0.5s ease-out;
+    }
+
+    .internet-modal h2 {
+      color: #1f2937;
+      font-weight: 700;
+      font-size: 1.8rem;
+      margin-bottom: 15px;
+    }
+
+    .internet-modal p {
+      color: #6b7280;
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 15px;
+      background: #f3f4f6;
+      border-radius: 10px;
+      margin-bottom: 25px;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.checking {
+      background: #f59e0b;
+    }
+
+    .status-dot.connected {
+      background: #10b981;
+    }
+
+    .status-dot.disconnected {
+      background: #ef4444;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+    }
+
+    .modal-btn {
+      padding: 14px 32px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .modal-btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .modal-btn-secondary {
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+
+    .modal-btn-secondary:hover {
+      background: #e5e7eb;
+    }
+
+    .modal-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(0.95); }
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes scaleIn {
+      from { transform: scale(0); }
+      to { transform: scale(1); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+
     .chat-container {
       display: flex;
       gap: 20px;
       height: calc(100vh - 200px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .chat-container.active {
+      opacity: 1;
+      pointer-events: auto;
     }
 
     .chat-sidebar {
@@ -218,6 +410,37 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
       display: flex;
       align-items: center;
       gap: 15px;
+      position: relative;
+    }
+
+    .clear-chat-btn {
+      position: absolute;
+      right: 25px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      color: white;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+    }
+
+    .clear-chat-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: translateY(-50%) scale(1.05);
+    }
+
+    .clear-chat-btn i {
+      font-size: 1.1rem;
     }
 
     .chat-header-avatar {
@@ -250,17 +473,12 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
       gap: 6px;
     }
 
-    .status-dot {
+    .status-dot-header {
       width: 8px;
       height: 8px;
       border-radius: 50%;
       background: #10b981;
       animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
     }
 
     .chat-messages {
@@ -322,7 +540,6 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
       border-radius: 50%;
     }
 
-    /* User messages on the right */
     .message.user {
       flex-direction: row-reverse;
       justify-content: flex-start;
@@ -352,7 +569,6 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
       border-bottom-right-radius: 4px;
     }
 
-    /* AI messages on the left */
     .message.ai {
       flex-direction: row;
     }
@@ -549,16 +765,6 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
       transform: translateY(-2px);
     }
 
-    .error-message {
-      background: #fef2f2;
-      border: 2px solid #fecaca;
-      color: #dc2626;
-      padding: 12px 16px;
-      border-radius: 10px;
-      margin: 10px 0;
-      font-size: 0.9rem;
-    }
-
     @media (max-width: 768px) {
       .chat-container {
         flex-direction: column;
@@ -579,6 +785,18 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
       .message.ai .message-content {
         max-width: 85%;
       }
+
+      .internet-modal {
+        padding: 30px 20px;
+      }
+
+      .modal-buttons {
+        flex-direction: column;
+      }
+
+      .modal-btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -587,6 +805,32 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
   <div class="loader-bg fixed inset-0 bg-white dark:bg-themedark-cardbg z-[1034]">
     <div class="loader-track h-[5px] w-full inline-block absolute overflow-hidden top-0">
       <div class="loader-fill w-[300px] h-[5px] bg-primary-500 absolute top-0 left-0 animate-[hitZak_0.6s_ease-in-out_infinite_alternate]"></div>
+    </div>
+  </div>
+
+  <!-- Internet Check Modal -->
+  <div class="internet-modal-overlay" id="internetModal">
+    <div class="internet-modal">
+      <div class="modal-icon" id="modalIcon">
+        🌐
+      </div>
+      <h2 id="modalTitle">Internet Connection Required</h2>
+      <p id="modalMessage">FinAI requires an active internet connection to provide AI-powered financial insights. Please ensure you're connected to the internet before continuing.</p>
+      
+      <div class="connection-status" id="connectionStatus">
+        <span class="status-dot checking" id="statusDot"></span>
+        <span id="statusText">Checking connection...</span>
+      </div>
+
+      <div class="modal-buttons" id="modalButtons">
+        <button class="modal-btn modal-btn-primary" id="checkConnectionBtn" onclick="checkInternetConnection()">
+          <span class="loading-spinner" style="display: none;" id="checkingSpinner"></span>
+          <span id="checkBtnText">Check Connection</span>
+        </button>
+        <button class="modal-btn modal-btn-secondary" onclick="window.location.href='dashboard.php'">
+          ← Back to Dashboard
+        </button>
+      </div>
     </div>
   </div>
 
@@ -609,7 +853,7 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
       </div>
 
       <!-- Chat Container -->
-      <div class="chat-container">
+      <div class="chat-container" id="chatContainer">
         <!-- Sidebar -->
         <div class="chat-sidebar">
           <h6>
@@ -677,10 +921,14 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
             <div class="chat-header-info">
               <h5>FinAI Assistant</h5>
               <div class="chat-status">
-                <span class="status-dot"></span>
+                <span class="status-dot-header"></span>
                 <p>Powered by Google Gemini AI</p>
               </div>
             </div>
+            <button class="clear-chat-btn" onclick="clearChatHistory()" title="Clear all chat history">
+              <i data-feather="trash-2"></i>
+              <span>Clear Chat</span>
+            </button>
           </div>
 
           <!-- Chat Messages -->
@@ -784,6 +1032,166 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
     const userInitial = '<?php echo strtoupper(substr($user['fullname'], 0, 1)); ?>';
     const userProfilePic = '<?php echo htmlspecialchars($userProfilePic); ?>';
 
+    let isConnected = false;
+    let connectionCheckAttempts = 0;
+    const MAX_ATTEMPTS = 3;
+
+    // Check internet connection on page load
+    window.addEventListener('load', function() {
+      checkInternetConnection();
+    });
+
+    // Internet connection check function
+    async function checkInternetConnection() {
+      const modalIcon = document.getElementById('modalIcon');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalMessage = document.getElementById('modalMessage');
+      const statusDot = document.getElementById('statusDot');
+      const statusText = document.getElementById('statusText');
+      const checkBtn = document.getElementById('checkConnectionBtn');
+      const checkingSpinner = document.getElementById('checkingSpinner');
+      const checkBtnText = document.getElementById('checkBtnText');
+
+      // Reset to checking state
+      modalIcon.className = 'modal-icon checking';
+      modalIcon.textContent = '🌐';
+      statusDot.className = 'status-dot checking';
+      statusText.textContent = 'Checking connection...';
+      checkBtn.disabled = true;
+      checkingSpinner.style.display = 'inline-block';
+      checkBtnText.textContent = 'Checking...';
+
+      connectionCheckAttempts++;
+
+      try {
+        // Test 1: Check if online
+        if (!navigator.onLine) {
+          throw new Error('No internet connection detected');
+        }
+
+        // Test 2: Try to fetch from a reliable endpoint
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const response = await fetch('https://www.google.com/favicon.ico', {
+          method: 'HEAD',
+          mode: 'no-cors',
+          cache: 'no-cache',
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        // Test 3: Verify we can reach our own API
+        const apiTest = await fetch('chat_handler.php', {
+          method: 'OPTIONS',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        // Connection successful!
+        isConnected = true;
+        modalIcon.className = 'modal-icon success';
+        modalIcon.textContent = '✅';
+        modalTitle.textContent = 'Connection Successful!';
+        modalMessage.textContent = 'Your internet connection is active and FinAI is ready to help you with your financial questions.';
+        statusDot.className = 'status-dot connected';
+        statusText.textContent = 'Connected • Ready to use';
+        statusText.style.color = '#10b981';
+
+        checkBtn.disabled = false;
+        checkingSpinner.style.display = 'none';
+        checkBtnText.textContent = 'Start Using FinAI';
+        checkBtn.onclick = closeModalAndStartChat;
+
+        // Auto-close after 2 seconds
+        setTimeout(() => {
+          closeModalAndStartChat();
+        }, 2000);
+
+      } catch (error) {
+        console.error('Connection check failed:', error);
+        
+        isConnected = false;
+        modalIcon.className = 'modal-icon error';
+        modalIcon.textContent = '❌';
+        modalTitle.textContent = 'No Internet Connection';
+        
+        if (connectionCheckAttempts >= MAX_ATTEMPTS) {
+          modalMessage.innerHTML = '<strong>Unable to connect after ' + MAX_ATTEMPTS + ' attempts.</strong><br><br>Please check:<br>• Your WiFi or mobile data is turned on<br>• You have an active internet connection<br>• Try disabling airplane mode<br>• Check your network settings';
+        } else {
+          modalMessage.innerHTML = '<strong>Connection attempt ' + connectionCheckAttempts + ' of ' + MAX_ATTEMPTS + ' failed.</strong><br><br>Please ensure you have an active internet connection and try again.';
+        }
+        
+        statusDot.className = 'status-dot disconnected';
+        statusText.textContent = 'Disconnected • No internet access';
+        statusText.style.color = '#ef4444';
+
+        checkBtn.disabled = false;
+        checkingSpinner.style.display = 'none';
+        
+        if (connectionCheckAttempts >= MAX_ATTEMPTS) {
+          checkBtnText.textContent = 'Retry Connection';
+          connectionCheckAttempts = 0; // Reset for next time
+        } else {
+          checkBtnText.textContent = 'Try Again (' + (MAX_ATTEMPTS - connectionCheckAttempts) + ' left)';
+        }
+      }
+    }
+
+    // Close modal and enable chat
+    function closeModalAndStartChat() {
+      if (!isConnected) {
+        alert('⚠️ Please establish an internet connection first before using FinAI.');
+        return;
+      }
+
+      const modal = document.getElementById('internetModal');
+      const chatContainer = document.getElementById('chatContainer');
+      
+      modal.style.animation = 'fadeOut 0.3s ease-out forwards';
+      
+      setTimeout(() => {
+        modal.style.display = 'none';
+        chatContainer.classList.add('active');
+        
+        // Focus on input
+        document.getElementById('chatInput').focus();
+      }, 300);
+    }
+
+    // Monitor connection changes
+    window.addEventListener('online', function() {
+      console.log('Connection restored');
+      if (!isConnected) {
+        // Show reconnection notification
+        const notification = document.createElement('div');
+        notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 10001; animation: slideInRight 0.5s ease-out;';
+        notification.innerHTML = '<strong>✅ Connected!</strong><br>Internet connection restored.';
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+          notification.remove();
+        }, 3000);
+        
+        isConnected = true;
+      }
+    });
+
+    window.addEventListener('offline', function() {
+      console.log('Connection lost');
+      isConnected = false;
+      
+      // Show disconnection notification
+      const notification = document.createElement('div');
+      notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 10001; animation: slideInRight 0.5s ease-out;';
+      notification.innerHTML = '<strong>⚠️ Disconnected!</strong><br>Internet connection lost.';
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 5000);
+    });
+
     // Auto-resize textarea
     const chatInput = document.getElementById('chatInput');
     chatInput.addEventListener('input', function() {
@@ -801,6 +1209,12 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
 
     // Send message function
     async function sendMessage() {
+      // Check internet connection before sending
+      if (!isConnected || !navigator.onLine) {
+        alert('⚠️ No internet connection. Please connect to the internet to use FinAI.');
+        return;
+      }
+
       const input = document.getElementById('chatInput');
       const message = input.value.trim();
       
@@ -867,7 +1281,14 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
         const typingIndicator = document.getElementById('typingIndicator');
         typingIndicator.classList.remove('active');
         
-        addMessage('❌ Network Error: Could not connect to the AI service. Please check your internet connection.<br><br><strong>Error:</strong> ' + error.message, 'ai');
+        // Check if it's a network error
+        if (!navigator.onLine) {
+          addMessage('❌ Connection Lost: Your internet connection was interrupted. Please check your connection and try again.', 'ai');
+          isConnected = false;
+        } else {
+          addMessage('❌ Network Error: Could not connect to the AI service. Please check your internet connection.<br><br><strong>Error:</strong> ' + error.message, 'ai');
+        }
+        
         console.error('Fetch Error:', error);
       } finally {
         // Re-enable send button
@@ -877,6 +1298,10 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
 
     // Quick message function
     function sendQuickMessage(message) {
+      if (!isConnected || !navigator.onLine) {
+        alert('⚠️ No internet connection. Please connect to the internet to use FinAI.');
+        return;
+      }
       document.getElementById('chatInput').value = message;
       sendMessage();
     }
@@ -928,6 +1353,63 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     });
 
+    // Clear chat history function
+    async function clearChatHistory() {
+      if (!confirm('🗑️ Are you sure you want to clear all chat history? This action cannot be undone.')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('clear_chat.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Clear the chat messages from UI
+          const messagesContainer = document.getElementById('chatMessages');
+          messagesContainer.innerHTML = `
+            <div class="welcome-message" id="welcomeMessage">
+              <h3>👋 Hello, ${userName}!</h3>
+              <p>I'm FinAI, your AI-powered financial assistant. I can help you analyze your spending, provide personalized budget recommendations, and answer questions about your finances using advanced AI technology.</p>
+              <div class="suggestion-chips">
+                <div class="suggestion-chip" onclick="sendQuickMessage('Analyze my spending patterns')">
+                  Analyze Spending
+                </div>
+                <div class="suggestion-chip" onclick="sendQuickMessage('Give me budget tips')">
+                  Budget Tips
+                </div>
+                <div class="suggestion-chip" onclick="sendQuickMessage('How can I save money?')">
+                  Save Money
+                </div>
+              </div>
+            </div>
+          `;
+
+          // Show success notification
+          const notification = document.createElement('div');
+          notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 10001; animation: slideInRight 0.5s ease-out;';
+          notification.innerHTML = '<strong>✅ Success!</strong><br>Chat history cleared.';
+          document.body.appendChild(notification);
+
+          setTimeout(() => {
+            notification.remove();
+          }, 3000);
+
+        } else {
+          alert('❌ Failed to clear chat history. Please try again.');
+        }
+
+      } catch (error) {
+        console.error('Clear chat error:', error);
+        alert('❌ Error: Could not clear chat history. Please check your connection.');
+      }
+    }
+
     // Initialize
     layout_change('false');
     layout_theme_sidebar_change('dark');
@@ -938,4 +1420,4 @@ $chatHistory = array_reverse($chatHistory); // Oldest first
     main_layout_change('vertical');
   </script>
 </body>
-</html>
+</html

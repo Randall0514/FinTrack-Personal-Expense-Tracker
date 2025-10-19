@@ -427,11 +427,32 @@ if (isset($_POST['change_password'])) {
       letter-spacing: 0.3px;
     }
 
+    .input-wrapper {
+      position: relative;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #666;
+      transition: color 0.3s;
+      display: flex;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .toggle-password:hover {
+      color: #667eea;
+    }
+
     .form-group input,
     .form-group select,
     .form-group textarea {
       width: 100%;
-      padding: 14px 18px;
+      padding: 14px 45px 14px 18px;
       border: 2px solid #e5e7eb;
       border-radius: 12px;
       outline: none;
@@ -864,29 +885,56 @@ if (isset($_POST['change_password'])) {
                 <div class="form-row">
                   <div class="form-group">
                     <label><i class="feather icon-key" style="margin-right: 5px;"></i> Current Password</label>
-                    <input type="password" 
-                           name="current_password" 
-                           placeholder="Enter current password"
-                           required>
+                    <div class="input-wrapper">
+                      <input type="password" 
+                             name="current_password" 
+                             id="current_password"
+                             placeholder="Enter current password"
+                             required>
+                      <span class="toggle-password" onclick="togglePasswordField('current_password', 'eye-icon-current')">
+                        <svg id="eye-icon-current" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                      </span>
+                    </div>
                   </div>
                   
                   <div class="form-group">
                     <label><i class="feather icon-lock" style="margin-right: 5px;"></i> New Password</label>
-                    <input type="password" 
-                           name="new_password" 
-                           placeholder="Enter new password"
-                           minlength="8"
-                           required>
+                    <div class="input-wrapper">
+                      <input type="password" 
+                             name="new_password" 
+                             id="new_password"
+                             placeholder="Enter new password"
+                             minlength="8"
+                             required>
+                      <span class="toggle-password" onclick="togglePasswordField('new_password', 'eye-icon-new')">
+                        <svg id="eye-icon-new" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                      </span>
+                    </div>
                   </div>
                 </div>
                 
                 <div class="form-group">
                   <label><i class="feather icon-check-circle" style="margin-right: 5px;"></i> Confirm New Password</label>
-                  <input type="password" 
-                         name="confirm_password" 
-                         placeholder="Re-enter new password"
-                         minlength="8"
-                         required>
+                  <div class="input-wrapper">
+                    <input type="password" 
+                           name="confirm_password" 
+                           id="confirm_password"
+                           placeholder="Re-enter new password"
+                           minlength="8"
+                           required>
+                    <span class="toggle-password" onclick="togglePasswordField('confirm_password', 'eye-icon-confirm')">
+                      <svg id="eye-icon-confirm" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    </span>
+                  </div>
                 </div>
 
                 <div class="info-box">
@@ -962,6 +1010,20 @@ if (isset($_POST['change_password'])) {
   <script src="../assets/js/script.js"></script>
 
   <script>
+    // Toggle password visibility
+    function togglePasswordField(inputId, iconId) {
+      const passwordInput = document.getElementById(inputId);
+      const eyeIcon = document.getElementById(iconId);
+      
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+      } else {
+        passwordInput.type = 'password';
+        eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+      }
+    }
+
     function previewFile() {
       const file = document.getElementById('profile_picture').files[0];
       const preview = document.getElementById('profilePreview');
