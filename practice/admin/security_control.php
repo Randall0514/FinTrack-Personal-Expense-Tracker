@@ -4,19 +4,29 @@ require '../vendor/autoload.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-// Check if token exists
-if (!isset($_COOKIE['jwt_token'])) {
+// ✅ FIXED: Check for admin token first
+$secret_key = "your_secret_key_here_change_this_in_production";
+
+// Check if admin token exists
+if (!isset($_COOKIE['admin_jwt_token'])) {
+    // Check if regular user token exists and redirect accordingly
+    if (isset($_COOKIE['jwt_token'])) {
+        header("Location: ../dist/admin/dashboard.php");
+        exit;
+    }
     header("Location: ../login.php");
     exit;
 }
 
-// Verify token
-$secret_key = "your_secret_key_here_change_this_in_production";
+// Verify admin token
+$jwt = $_COOKIE['admin_jwt_token'];
 try {
-    $decoded = JWT::decode($_COOKIE['jwt_token'], new Key($secret_key, 'HS256'));
+    $decoded = JWT::decode($jwt, new Key($secret_key, 'HS256'));
     
     // Check if user is admin
     if (!isset($decoded->data->is_admin) || $decoded->data->is_admin !== true) {
+        // Not an admin, clear cookie and redirect
+        setcookie("admin_jwt_token", "", time() - 3600, "/", "", false, true);
         header("Location: ../dist/admin/dashboard.php");
         exit;
     }
@@ -26,7 +36,7 @@ try {
     $email = $decoded->data->email;
 } catch (Exception $e) {
     // Invalid token
-    setcookie("jwt_token", "", time() - 3600, "/", "localhost", false, true);
+    setcookie("admin_jwt_token", "", time() - 3600, "/", "", false, true);
     header("Location: ../login.php");
     exit;
 }
@@ -121,25 +131,37 @@ $tableCheck = $conn->query("SHOW TABLES LIKE 'login_attempts'");
 if ($tableCheck->num_rows == 0) {
     $createTable = "CREATE TABLE login_attempts (
         id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NULL,
         username VARCHAR(255) NOT NULL,
         email VARCHAR(255) NOT NULL,
         success BOOLEAN DEFAULT FALSE,
         attempt_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        ip_address VARCHAR(45) NULL,
         INDEX idx_attempt_time (attempt_time),
         INDEX idx_success (success),
-        INDEX idx_email (email)
+        INDEX idx_user_id (user_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
     )";
     $conn->query($createTable);
 } else {
-    // Check if email column exists, if not add it
-    $columnCheck = $conn->query("SHOW COLUMNS FROM login_attempts LIKE 'email'");
+    // Check if user_id column exists, if not add it
+    $columnCheck = $conn->query("SHOW COLUMNS FROM login_attempts LIKE 'user_id'");
     if ($columnCheck->num_rows == 0) {
-        // Add email column
-        $conn->query("ALTER TABLE login_attempts ADD COLUMN email VARCHAR(255) NOT NULL DEFAULT '' AFTER username");
-        $conn->query("ALTER TABLE login_attempts ADD INDEX idx_email (email)");
+        $conn->query("ALTER TABLE login_attempts ADD COLUMN user_id INT NULL AFTER id");
+        $conn->query("ALTER TABLE login_attempts ADD INDEX idx_user_id (user_id)");
+        $conn->query("ALTER TABLE login_attempts ADD FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL");
         
-        // Update existing records with placeholder email if username exists
-        $conn->query("UPDATE login_attempts SET email = CONCAT(username, '@example.com') WHERE email = ''");
+        // Try to match existing records with users
+        $conn->query("UPDATE login_attempts la 
+                     INNER JOIN users u ON (la.username = u.username OR la.email = u.email) 
+                     SET la.user_id = u.id 
+                     WHERE la.user_id IS NULL");
+    }
+    
+    // Check if ip_address column exists
+    $columnCheck = $conn->query("SHOW COLUMNS FROM login_attempts LIKE 'ip_address'");
+    if ($columnCheck->num_rows == 0) {
+        $conn->query("ALTER TABLE login_attempts ADD COLUMN ip_address VARCHAR(45) NULL");
     }
 }
 
@@ -188,20 +210,23 @@ $status_filter = isset($_GET['status']) ? $_GET['status'] : '';
 $sort_by = isset($_GET['sort']) ? $_GET['sort'] : 'attempt_time';
 $sort_order = isset($_GET['order']) ? $_GET['order'] : 'DESC';
 
-// Build query with filters
-$query = "SELECT * FROM login_attempts WHERE 1=1";
+// Build query with filters and JOIN with users table
+$query = "SELECT la.*, u.fullname, u.id as actual_user_id 
+          FROM login_attempts la 
+          LEFT JOIN users u ON la.user_id = u.id 
+          WHERE 1=1";
 
 if (!empty($search)) {
     $search_term = '%' . $conn->real_escape_string($search) . '%';
-    $query .= " AND (username LIKE '$search_term' OR email LIKE '$search_term')";
+    $query .= " AND (la.username LIKE '$search_term' OR la.email LIKE '$search_term' OR u.fullname LIKE '$search_term')";
 }
 
 if ($status_filter !== '') {
-    $query .= " AND success = " . ($status_filter === 'success' ? '1' : '0');
+    $query .= " AND la.success = " . ($status_filter === 'success' ? '1' : '0');
 }
 
 // Validate sort column
-$allowed_sorts = ['username', 'email', 'success', 'attempt_time'];
+$allowed_sorts = ['username', 'email', 'success', 'attempt_time', 'fullname'];
 if (!in_array($sort_by, $allowed_sorts)) {
     $sort_by = 'attempt_time';
 }
@@ -211,7 +236,15 @@ if (!in_array(strtoupper($sort_order), ['ASC', 'DESC'])) {
     $sort_order = 'DESC';
 }
 
-$query .= " ORDER BY $sort_by $sort_order LIMIT 50";
+// Adjust sort column for JOIN
+$sort_column = $sort_by;
+if ($sort_by === 'fullname') {
+    $sort_column = 'u.fullname';
+} else {
+    $sort_column = 'la.' . $sort_by;
+}
+
+$query .= " ORDER BY $sort_column $sort_order LIMIT 50";
 
 // Get login attempts
 $login_attempts = [];
@@ -226,45 +259,8 @@ if ($result) {
 $result = $conn->query("SELECT COUNT(*) as total FROM users");
 $total_users = $result ? $result->fetch_assoc()['total'] : 0;
 
-// Insert some test data for login attempts if none exist
-$result = $conn->query("SELECT COUNT(*) as count FROM login_attempts");
-$count = $result->fetch_assoc()['count'];
-if ($count == 0) {
-    // Get real users from database to use their actual emails
-    $usersResult = $conn->query("SELECT id, username, email FROM users LIMIT 10");
-    
-    if ($usersResult && $usersResult->num_rows > 0) {
-        $realUsers = $usersResult->fetch_all(MYSQLI_ASSOC);
-        
-        // Insert login attempts with real user data
-        foreach ($realUsers as $index => $user) {
-            $username = $user['username'];
-            $email = $user['email'];
-            
-            // Insert some failed attempts for variety
-            if ($index % 3 == 0) {
-                $conn->query("INSERT INTO login_attempts (username, email, success, attempt_time) 
-                             VALUES ('$username', '$email', 0, DATE_SUB(NOW(), INTERVAL " . rand(1, 48) . " HOUR))");
-            }
-            
-            // Insert successful login
-            $conn->query("INSERT INTO login_attempts (username, email, success, attempt_time) 
-                         VALUES ('$username', '$email', 1, DATE_SUB(NOW(), INTERVAL " . rand(1, 24) . " HOUR))");
-        }
-    } else {
-        // Fallback to dummy data if no users exist
-        $conn->query("INSERT INTO login_attempts (username, email, success, attempt_time) 
-                     VALUES ('test_user', 'test@example.com', 0, NOW()),
-                            ('another_user', 'another@example.com', 0, NOW()),
-                            ('admin', 'admin@example.com', 0, NOW())");
-        
-        $conn->query("INSERT INTO login_attempts (username, email, success, attempt_time) 
-                     VALUES ('valid_user', 'valid@example.com', 1, NOW()),
-                            ('admin', 'admin@example.com', 1, NOW()),
-                            ('test_user', 'test@example.com', 1, NOW()),
-                            ('another_user', 'another@example.com', 1, NOW())");
-    }
-}
+// ✅ REMOVED: The automatic test data insertion code has been completely removed
+// Login attempts will now only show real authentication data
 
 $result = $conn->query("SELECT COUNT(*) as total FROM login_attempts WHERE success = 0 AND attempt_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)");
 $failed_attempts = $result ? $result->fetch_assoc()['total'] : 0;
@@ -284,12 +280,6 @@ if ($tableCheck->num_rows == 0) {
         INDEX idx_last_activity (last_activity)
     )";
     $conn->query($createTable);
-    
-    // Insert some test session data
-    $conn->query("INSERT INTO sessions (id, user_id, ip_address, user_agent, last_activity) 
-                 VALUES ('session1', 1, '127.0.0.1', 'Mozilla/5.0', NOW()),
-                        ('session2', 2, '127.0.0.1', 'Chrome/90.0', NOW()),
-                        ('session3', 3, '127.0.0.1', 'Firefox/88.0', NOW())");
 }
 
 // Get active sessions
@@ -929,6 +919,35 @@ function toggleOrder($current_order) {
         background-color: #f8fafc;
     }
 
+    /* User Cell */
+    .user-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .user-cell img {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        border: 2px solid #f0f4f8;
+    }
+
+    .user-cell-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .user-cell-name {
+        font-weight: 600;
+        color: #1a202c;
+    }
+
+    .user-cell-email {
+        font-size: 12px;
+        color: #a0aec0;
+    }
+
     /* Status Badges */
     .status-badge {
         padding: 6px 14px;
@@ -1108,6 +1127,11 @@ function toggleOrder($current_order) {
             width: 100%;
             justify-content: center;
         }
+
+        .user-cell {
+            flex-direction: column;
+            align-items: flex-start;
+        }
     }
 
     @media (max-width: 480px) {
@@ -1286,7 +1310,7 @@ function toggleOrder($current_order) {
                 <form method="GET" class="filter-bar">
                     <div class="search-box">
                         <i class="fas fa-search"></i>
-                        <input type="text" name="search" placeholder="Search by username or email..." value="<?php echo htmlspecialchars($search); ?>">
+                        <input type="text" name="search" placeholder="Search by name, username or email..." value="<?php echo htmlspecialchars($search); ?>">
                     </div>
                     <select name="status" class="filter-select" onchange="this.form.submit()">
                         <option value="">All Status</option>
@@ -1315,6 +1339,9 @@ function toggleOrder($current_order) {
                     <table>
                         <thead>
                             <tr>
+                                <th onclick="sortTable('fullname')">
+                                    User <span class="sort-icon"><?php echo getSortIcon('fullname', $sort_by, $sort_order); ?></span>
+                                </th>
                                 <th onclick="sortTable('username')">
                                     Username <span class="sort-icon"><?php echo getSortIcon('username', $sort_by, $sort_order); ?></span>
                                 </th>
@@ -1332,12 +1359,21 @@ function toggleOrder($current_order) {
                         </thead>
                         <tbody>
                             <?php if (empty($login_attempts)): ?>
-                                <tr><td colspan="5"><div class="empty-state"><i class="fas fa-clipboard-list"></i><div class="empty-state-text">No login attempts found</div></div></td></tr>
+                                <tr><td colspan="6"><div class="empty-state"><i class="fas fa-clipboard-list"></i><div class="empty-state-text">No login attempts found</div></div></td></tr>
                             <?php else: ?>
                                 <?php foreach ($login_attempts as $attempt): ?>
                                     <tr>
+                                        <td>
+                                            <div class="user-cell">
+                                                <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($attempt['fullname'] ?? $attempt['username']); ?>&background=667eea&color=fff&bold=true" alt="Avatar">
+                                                <div class="user-cell-info">
+                                                    <div class="user-cell-name"><?php echo htmlspecialchars($attempt['fullname'] ?? $attempt['username']); ?></div>
+                                                    <div class="user-cell-email"><?php echo isset($attempt['actual_user_id']) ? 'ID: ' . $attempt['actual_user_id'] : 'Unknown User'; ?></div>
+                                                </div>
+                                            </div>
+                                        </td>
                                         <td style="font-weight: 600;"><i class="fas fa-user" style="color: #667eea; margin-right: 8px;"></i><?php echo htmlspecialchars($attempt['username']); ?></td>
-                                        <td style="color: #718096;"><i class="fas fa-envelope" style="margin-right: 8px;"></i><?php echo htmlspecialchars(isset($attempt['email']) ? $attempt['email'] : 'N/A'); ?></td>
+                                        <td style="color: #718096;"><i class="fas fa-envelope" style="margin-right: 8px;"></i><?php echo htmlspecialchars($attempt['email']); ?></td>
                                         <td><span class="status-badge <?php echo $attempt['success'] ? 'status-success' : 'status-failed'; ?>"><i class="fas <?php echo $attempt['success'] ? 'fa-check-circle' : 'fa-times-circle'; ?>"></i><?php echo $attempt['success'] ? 'Success' : 'Failed'; ?></span></td>
                                         <td style="color: #718096;"><i class="fas fa-clock" style="margin-right: 8px;"></i><?php echo date('M d, Y H:i:s', strtotime($attempt['attempt_time'])); ?></td>
                                         <td>

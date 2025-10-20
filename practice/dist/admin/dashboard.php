@@ -8,7 +8,7 @@ include '../database/config/db.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-// JWT Authentication
+// JWT Authentication - FIXED: Check for regular user token only
 $secret_key = "your_secret_key_here_change_this_in_production";
 
 if (!isset($_COOKIE['jwt_token'])) {
@@ -21,9 +21,17 @@ $jwt = $_COOKIE['jwt_token'];
 try {
     $decoded = JWT::decode($jwt, new Key($secret_key, 'HS256'));
     $user = (array) $decoded->data;
+    
+    // ✅ FIXED: Check if user is admin and redirect to admin dashboard
+    if (isset($user['is_admin']) && $user['is_admin'] === true) {
+        // Clear regular user cookie and redirect to admin
+        setcookie("jwt_token", "", time() - 3600, "/", "", false, true);
+        echo "<script>window.location.href='../../admin/dashboard.php';</script>";
+        exit;
+    }
 } catch (Exception $e) {
     echo "<script>alert('❌ Invalid or expired token. Please log in again.'); window.location.href='../../login.php';</script>";
-    setcookie("jwt_token", "", time() - 3600, "/");
+    setcookie("jwt_token", "", time() - 3600, "/", "", false, true);
     exit;
 }
 
@@ -301,7 +309,6 @@ $categories = [
 
     .card-body { padding: 25px !important; }
 
-    /* Alert Container - Fixed Position */
     .alert-container {
       position: fixed;
       top: 80px;
@@ -429,7 +436,6 @@ $categories = [
       to { opacity: 0; transform: translateX(100px); }
     }
 
-    /* Budget Cards */
     .budget-card {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
@@ -477,19 +483,9 @@ $categories = [
       font-weight: 700;
     }
 
-    /* Color coding for budget values */
-    .budget-value.safe {
-      color: #6ee7b7; /* Green for safe/budget */
-    }
-
-    .budget-value.warning {
-      color: #fcd34d; /* Yellow for warning */
-    }
-
-    .budget-value.danger {
-      color: #fca5a5; /* Red for danger/expenses */
-    }
-    
+    .budget-value.safe { color: #6ee7b7; }
+    .budget-value.warning { color: #fcd34d; }
+    .budget-value.danger { color: #fca5a5; }
 
     .progress-bar-wrapper {
       background: rgba(255, 255, 255, 0.2);
@@ -525,7 +521,6 @@ $categories = [
       color: white;
     }
 
-    /* Quick Add Form */
     .quick-add-form input,
     .quick-add-form select,
     .quick-add-form textarea {
@@ -557,7 +552,6 @@ $categories = [
 
     .quick-add-btn:hover { transform: translateY(-2px); }
 
-    /* Activity Feed */
     .activity-item {
       display: flex;
       align-items: center;
@@ -644,7 +638,6 @@ $categories = [
 
   <div class="pc-container">
     <div class="pc-content">
-      <!-- Page Header -->
       <div class="page-header">
         <div class="page-block">
           <div class="page-header-title">
@@ -657,12 +650,11 @@ $categories = [
           <ul class="breadcrumb">
             <li class="breadcrumb-item"><a href="dashboard.php">Home</a></li>
             <li class="breadcrumb-item" aria-current="page">Dashboard</li>
-            <li class="breadcrumb-item"><a href="logout.php">Logout</a></li>
+            <li class="breadcrumb-item"><a href="http://localhost/FinTrack-Personal-Expense-Tracker/practice/logout.php">Logout</a></li>
           </ul>
         </div>
       </div>
 
-      <!-- Alert Container -->
       <div class="alert-container">
         <?php if (!empty($alerts)): ?>
           <?php foreach ($alerts as $index => $alert): ?>
@@ -679,7 +671,6 @@ $categories = [
       </div>
 
       <div class="dashboard-grid">
-        <!-- Monthly Budget Card -->
         <div class="col-span-4">
           <div class="budget-card" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
             <h6>📆 Monthly Budget</h6>
@@ -703,7 +694,6 @@ $categories = [
           </div>
         </div>
 
-        <!-- Weekly Budget Card -->
         <div class="col-span-4">
           <div class="budget-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
             <h6>📅 Weekly Budget</h6>
@@ -727,7 +717,6 @@ $categories = [
           </div>
         </div>
 
-        <!-- Daily Budget Card -->
         <div class="col-span-4">
           <div class="budget-card">
             <h6>💰 Daily Budget</h6>
@@ -751,7 +740,6 @@ $categories = [
           </div>
         </div>
 
-        <!-- Category Chart -->
         <div class="col-span-8">
           <div class="card">
             <div class="card-header">
@@ -769,7 +757,6 @@ $categories = [
           </div>
         </div>
 
-        <!-- Quick Add Expense -->
         <div class="col-span-4">
           <div class="card">
             <div class="card-header">
@@ -801,7 +788,6 @@ $categories = [
           </div>
         </div>
 
-        <!-- Recent Activity Feed -->
         <div class="col-span-12">
           <div class="card">
             <div class="card-header">

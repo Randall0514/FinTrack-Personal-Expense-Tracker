@@ -4,19 +4,29 @@ require '../vendor/autoload.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-// Check if token exists
-if (!isset($_COOKIE['jwt_token'])) {
+// ✅ FIXED: Check for admin token first
+$secret_key = "your_secret_key_here_change_this_in_production";
+
+// Check if admin token exists
+if (!isset($_COOKIE['admin_jwt_token'])) {
+    // Check if regular user token exists and redirect accordingly
+    if (isset($_COOKIE['jwt_token'])) {
+        header("Location: ../dist/admin/dashboard.php");
+        exit;
+    }
     header("Location: ../login.php");
     exit;
 }
 
-// Verify token
-$secret_key = "your_secret_key_here_change_this_in_production";
+// Verify admin token
+$jwt = $_COOKIE['admin_jwt_token'];
 try {
-    $decoded = JWT::decode($_COOKIE['jwt_token'], new Key($secret_key, 'HS256'));
+    $decoded = JWT::decode($jwt, new Key($secret_key, 'HS256'));
     
     // Check if user is admin
     if (!isset($decoded->data->is_admin) || $decoded->data->is_admin !== true) {
+        // Not an admin, clear cookie and redirect
+        setcookie("admin_jwt_token", "", time() - 3600, "/", "", false, true);
         header("Location: ../dist/admin/dashboard.php");
         exit;
     }
@@ -26,7 +36,7 @@ try {
     $email = $decoded->data->email;
 } catch (Exception $e) {
     // Invalid token
-    setcookie("jwt_token", "", time() - 3600, "/", "localhost", false, true);
+    setcookie("admin_jwt_token", "", time() - 3600, "/", "", false, true);
     header("Location: ../login.php");
     exit;
 }
@@ -599,7 +609,7 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
                 <i class="fas fa-user-tag"></i>
                 <span>Account Ownership</span>
             </a>
-            <a href="../dist/admin/logout.php" class="nav-item">
+            <a href="../logout.php" class="nav-item">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
             </a>
