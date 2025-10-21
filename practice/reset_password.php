@@ -1,519 +1,663 @@
 <?php
 session_start();
-include 'database/config/db.php';
+require __DIR__ . "/config/dbconfig_password.php";
 
-$message = '';
-$messageType = '';
-$validToken = false;
-$token = '';
+// Get token from URL - trim whitespace and decode if needed
+$token = isset($_GET['token']) ? trim($_GET['token']) : '';
+$valid_token = false;
+$error_message = '';
 
-// Check if token is provided
-if(isset($_GET['token'])) {
-    $token = $_GET['token'];
-    
-    // Verify token
-    $stmt = $conn->prepare("SELECT id, email, fullname, reset_token_expiry FROM users WHERE reset_token = ?");
-    $stmt->bind_param("s", $token);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if($result->num_rows > 0) {
-        $user = $result->fetch_assoc();
-        
-        // Check if token has expired
-        if(strtotime($user['reset_token_expiry']) > time()) {
-            $validToken = true;
-        } else {
-            $message = 'This reset link has expired. Please request a new one.';
-            $messageType = 'error';
-        }
+// Debug: Log token info (remove in production)
+error_log("Token received: " . $token);
+error_log("Token length: " . strlen($token));
+
+if (!empty($token)) {
+    // Make sure token is exactly 64 characters (32 bytes in hex)
+    if (strlen($token) !== 64) {
+        $error_message = 'Invalid token format. Token length: ' . strlen($token);
+        error_log($error_message);
     } else {
-        $message = 'Invalid reset link.';
-        $messageType = 'error';
+        $token_hash = hash('sha256', $token);
+        error_log("Token hash: " . $token_hash);
+        
+        // Verify token with detailed error checking
+        $stmt = $conn->prepare("
+            SELECT pr.user_id, pr.expires_at, pr.used, u.email, u.fullname 
+            FROM password_resets pr 
+            JOIN users u ON pr.user_id = u.id 
+            WHERE pr.token_hash = ?
+            LIMIT 1
+        ");
+        $stmt->bind_param("s", $token_hash);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            $error_message = 'Token not found in database. Please request a new reset link.';
+            error_log($error_message);
+        } else {
+            $user_data = $result->fetch_assoc();
+            
+            // Check if already used
+            if ($user_data['used'] == 1) {
+                $error_message = 'This reset link has already been used. Please request a new one.';
+                error_log($error_message);
+            }
+            // Check if expired
+            elseif (strtotime($user_data['expires_at']) <= time()) {
+                $error_message = 'This reset link has expired. Please request a new one.';
+                error_log("Token expired at: " . $user_data['expires_at'] . ", Current time: " . date('Y-m-d H:i:s'));
+            }
+            else {
+                $valid_token = true;
+            }
+        }
+        $stmt->close();
     }
-    $stmt->close();
 } else {
-    $message = 'No reset token provided.';
-    $messageType = 'error';
-}
-
-// Handle password reset
-if(isset($_POST['submit']) && $validToken) {
-    $password = $_POST['password'];
-    $confirmPassword = $_POST['confirm_password'];
-    
-    // Validation
-    if(empty($password) || empty($confirmPassword)) {
-        $message = 'Please fill in all fields.';
-        $messageType = 'error';
-    } elseif($password !== $confirmPassword) {
-        $message = 'Passwords do not match.';
-        $messageType = 'error';
-    } elseif(strlen($password) < 8) {
-        $message = 'Password must be at least 8 characters long.';
-        $messageType = 'error';
-    } else {
-        // Hash the new password
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        
-        // Update password and clear reset token
-        $updateStmt = $conn->prepare("UPDATE users SET password = ?, reset_token = NULL, reset_token_expiry = NULL WHERE reset_token = ?");
-        $updateStmt->bind_param("ss", $hashedPassword, $token);
-        
-        if($updateStmt->execute()) {
-            $message = 'Password reset successful! You can now login with your new password.';
-            $messageType = 'success';
-            $validToken = false; // Prevent form from showing again
-        } else {
-            $message = 'Something went wrong. Please try again.';
-            $messageType = 'error';
-        }
-        
-        $updateStmt->close();
-    }
+    $error_message = 'No reset token provided in URL.';
+    error_log($error_message);
 }
 ?>
 <!doctype html>
 <html lang="en">
 <head>
-    <title>FinTrack - Reset Password</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <title>FinTrack - Reset Password</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-            font-weight: 700;
-        }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      font-weight: 700;
+    }
 
-        html {
-            overflow: hidden;
-        }
+    html {
+      overflow: hidden;
+    }
 
-        .reset-container {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            max-width: 500px;
-            padding: 20px;
-        }
+    .reset-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 750px;
+      padding: 20px;
+    }
 
-        body::before {
-            content: '';
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            top: -200px;
-            right: -200px;
-            animation: float 6s ease-in-out infinite;
-        }
+    body::before {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      top: -200px;
+      right: -200px;
+      animation: float 6s ease-in-out infinite;
+    }
 
-        body::after {
-            content: '';
-            position: absolute;
-            width: 300px;
-            height: 300px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            bottom: -100px;
-            left: -100px;
-            animation: float 8s ease-in-out infinite;
-        }
+    body::after {
+      content: '';
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      bottom: -100px;
+      left: -100px;
+      animation: float 8s ease-in-out infinite;
+    }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-        }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
 
-        .reset-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: slideUp 0.5s ease-out;
-        }
+    .reset-card {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.5s ease-out;
+      gap: 25px;
+    }
 
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+    .reset-left {
+      flex: 1;
+      text-align: center;
+      padding: 15px;
+      border-right: 1px solid #eee;
+    }
 
-        .logo-container {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+    .reset-right {
+      flex: 1.2;
+      padding: 15px;
+    }
 
-        .logo {
-            font-size: 2.5rem;
-            font-weight: bold;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
-        }
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
-        .logo-subtitle {
-            color: #666;
-            font-size: 1rem;
-            font-weight: 600;
-        }
+    .logo-container {
+      margin-bottom: 25px;
+    }
 
-        .welcome-text {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+    .logo {
+      font-size: 2.5rem;
+      font-weight: bold;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
 
-        .welcome-text h2 {
-            font-size: 1.8rem;
-            color: #333;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
+    .logo-subtitle {
+      color: #666;
+      font-size: 1rem;
+      font-weight: 600;
+    }
 
-        .welcome-text p {
-            color: #666;
-            font-size: 0.95rem;
-            font-weight: 600;
-            line-height: 1.6;
-        }
+    .key-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
 
-        .alert {
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-weight: 600;
-            animation: slideIn 0.3s ease-out;
-        }
+    .key-icon svg {
+      width: 40px;
+      height: 40px;
+      stroke: white;
+      stroke-width: 2;
+      fill: none;
+    }
 
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+    .welcome-text h2 {
+      font-size: 1.5rem;
+      color: #333;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
 
-        .alert-success {
-            background: #d1fae5;
-            color: #065f46;
-            border: 2px solid #10b981;
-        }
+    .welcome-text p {
+      color: #666;
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
 
-        .alert-error {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 2px solid #ef4444;
-        }
+    .form-group {
+      margin-bottom: 18px;
+    }
 
-        .form-group {
-            margin-bottom: 20px;
-        }
+    label {
+      display: block;
+      color: #333;
+      font-weight: 700;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
 
-        label {
-            display: block;
-            color: #333;
-            font-weight: 700;
-            margin-bottom: 8px;
-            font-size: 0.95rem;
-        }
+    .input-wrapper {
+      position: relative;
+    }
 
-        input[type="password"] {
-            width: 100%;
-            padding: 14px 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-family: 'Inter', sans-serif;
-            font-weight: 600;
-            transition: all 0.3s;
-            background: white;
-        }
+    .toggle-password {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #666;
+      transition: color 0.3s;
+      display: flex;
+      align-items: center;
+    }
 
-        input[type="password"]:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-        }
+    .toggle-password:hover {
+      color: #667eea;
+    }
 
-        .password-strength {
-            margin-top: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 45px 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      transition: all 0.3s;
+      background: white;
+    }
 
-        .strength-bar {
-            height: 4px;
-            background: #e0e0e0;
-            border-radius: 2px;
-            margin-top: 5px;
-            overflow: hidden;
-        }
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
 
-        .strength-fill {
-            height: 100%;
-            width: 0%;
-            transition: all 0.3s;
-            border-radius: 2px;
-        }
+    .password-strength {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
 
-        .strength-weak { width: 33%; background: #ef4444; }
-        .strength-medium { width: 66%; background: #f59e0b; }
-        .strength-strong { width: 100%; background: #10b981; }
+    .strength-bar {
+      height: 4px;
+      background: #e0e0e0;
+      border-radius: 2px;
+      margin-top: 5px;
+    }
 
-        .password-requirements {
-            background: #f9fafb;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 10px;
-            font-size: 0.85rem;
-        }
+    .strength-fill {
+      height: 100%;
+      width: 0%;
+      transition: all 0.3s;
+      border-radius: 2px;
+    }
 
-        .password-requirements ul {
-            list-style: none;
-            padding: 0;
-            margin: 5px 0 0 0;
-        }
+    .strength-weak { width: 33%; background: #ff4444; }
+    .strength-medium { width: 66%; background: #ffaa00; }
+    .strength-strong { width: 100%; background: #00C851; }
 
-        .password-requirements li {
-            padding: 3px 0;
-            color: #6b7280;
-            font-weight: 600;
-        }
+    .btn-reset {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+      font-family: 'Inter', sans-serif;
+    }
 
-        .password-requirements li.valid {
-            color: #10b981;
-        }
+    .btn-reset:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+    }
 
-        .password-requirements li::before {
-            content: '○ ';
-            margin-right: 5px;
-        }
+    .btn-reset:active {
+      transform: translateY(0);
+    }
 
-        .password-requirements li.valid::before {
-            content: '✓ ';
-        }
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 20px 0;
+      color: #999;
+      font-weight: 600;
+    }
 
-        .btn-reset {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-            font-family: 'Inter', sans-serif;
-        }
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid #e0e0e0;
+    }
 
-        .btn-reset:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
-        }
+    .divider span {
+      padding: 0 15px;
+      font-size: 0.9rem;
+    }
 
-        .btn-reset:active {
-            transform: translateY(0);
-        }
+    .back-login {
+      text-align: center;
+      color: #666;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
 
-        .btn-reset:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
+    .back-login a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 700;
+      transition: color 0.3s;
+    }
 
-        .back-links {
-            text-align: center;
-            margin-top: 25px;
-        }
+    .back-login a:hover {
+      color: #764ba2;
+    }
 
-        .back-links a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 0.95rem;
-            transition: color 0.3s;
-        }
+    .alert {
+      padding: 12px 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-        .back-links a:hover {
-            color: #764ba2;
-        }
+    .alert-error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
 
-        .icon {
-            display: inline-block;
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%;
-            margin: 0 auto 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-        }
-    </style>
+    .alert svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .password-requirements {
+      background: #f0f7ff;
+      border: 1px solid #bedaff;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 15px;
+    }
+
+    .password-requirements h4 {
+      color: #0066cc;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+    }
+
+    .password-requirements ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .password-requirements li {
+      color: #333;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 3px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .password-requirements li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: #ccc;
+      font-weight: bold;
+      font-size: 0.9rem;
+      transition: color 0.3s;
+    }
+
+    .password-requirements li.met {
+      color: #00C851;
+    }
+
+    .password-requirements li.met::before {
+      color: #00C851;
+    }
+
+    .btn-secondary {
+      display: inline-block;
+      padding: 12px 30px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: 700;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .error-state {
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
-    <div class="reset-container">
-        <div class="reset-card">
-            <div class="logo-container">
-                <div class="logo">FinTrack</div>
-                <p class="logo-subtitle">Personal Expense Tracker</p>
-            </div>
-
-            <div class="icon"><?php echo $validToken ? '🔐' : '⚠️'; ?></div>
-
-            <div class="welcome-text">
-                <h2><?php echo $validToken ? 'Reset Your Password' : 'Invalid Link'; ?></h2>
-                <p><?php echo $validToken ? 'Enter your new password below.' : 'This reset link is invalid or has expired.'; ?></p>
-            </div>
-
-            <?php if(!empty($message)): ?>
-                <div class="alert alert-<?php echo $messageType; ?>">
-                    <?php echo htmlspecialchars($message); ?>
-                </div>
-            <?php endif; ?>
-
-            <?php if($validToken): ?>
-                <form method="POST" action="" id="resetForm">
-                    <div class="form-group">
-                        <label for="password">New Password</label>
-                        <input type="password" id="password" name="password" placeholder="Enter new password" required />
-                        <div class="password-strength">
-                            <div class="strength-bar">
-                                <div class="strength-fill" id="strengthBar"></div>
-                            </div>
-                        </div>
-                        <div class="password-requirements">
-                            <strong>Password must contain:</strong>
-                            <ul id="requirements">
-                                <li id="req-length">At least 8 characters</li>
-                                <li id="req-uppercase">One uppercase letter</li>
-                                <li id="req-lowercase">One lowercase letter</li>
-                                <li id="req-number">One number</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="confirm_password">Confirm Password</label>
-                        <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm new password" required />
-                    </div>
-
-                    <button type="submit" name="submit" class="btn-reset" id="submitBtn">
-                        Reset Password
-                    </button>
-                </form>
-            <?php endif; ?>
-
-            <div class="back-links">
-                <a href="login.php">← Back to Login</a>
-            </div>
+  <div class="reset-container">
+    <div class="reset-card">
+      <!-- Left Side -->
+      <div class="reset-left">
+        <div class="logo-container">
+          <div class="logo">FinTrack</div>
+          <p class="logo-subtitle">Personal Expense Tracker</p>
         </div>
+        <div class="key-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Right Side -->
+      <div class="reset-right">
+        <?php if (!$valid_token): ?>
+          <div class="error-state">
+            <div class="welcome-text">
+              <h2>Invalid Reset Link</h2>
+              <p><?php echo htmlspecialchars($error_message); ?></p>
+            </div>
+            
+            <div class="alert alert-error">
+              <svg fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+              </svg>
+              The password reset link is invalid or has expired.
+            </div>
+
+            <div style="margin: 20px 0;">
+              <a href="forgot_password.php" class="btn-secondary">Request New Link</a>
+            </div>
+
+            <div class="divider">
+              <span>OR</span>
+            </div>
+
+            <div class="back-login">
+              <a href="login.php">Back to Login</a>
+            </div>
+          </div>
+
+        <?php else: ?>
+          <div class="welcome-text">
+            <h2>Reset Your Password</h2>
+            <p>Hi <strong><?php echo htmlspecialchars($user_data['fullname']); ?></strong>, enter your new password below.</p>
+          </div>
+
+          <div class="password-requirements">
+            <h4>Password Requirements:</h4>
+            <ul>
+              <li id="req-length">At least 8 characters long</li>
+              <li id="req-case">Contains uppercase and lowercase letters</li>
+              <li id="req-number">Includes at least one number</li>
+              <li id="req-special">Has at least one special character</li>
+            </ul>
+          </div>
+
+          <form method="POST" action="reset_password_process.php" id="resetForm">
+            <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
+            
+            <div class="form-group">
+              <label for="password">New Password</label>
+              <div class="input-wrapper">
+                <input type="password" id="password" name="password" placeholder="Enter new password" required />
+                <span class="toggle-password" onclick="togglePassword('password', 'eye-icon-1')">
+                  <svg id="eye-icon-1" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </span>
+              </div>
+              <div class="password-strength">
+                <div class="strength-bar">
+                  <div class="strength-fill" id="strengthBar"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="confirm_password">Confirm New Password</label>
+              <div class="input-wrapper">
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm new password" required />
+                <span class="toggle-password" onclick="togglePassword('confirm_password', 'eye-icon-2')">
+                  <svg id="eye-icon-2" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </span>
+              </div>
+            </div>
+
+            <button type="submit" name="submit" class="btn-reset">
+              Reset Password
+            </button>
+
+            <div class="divider">
+              <span>OR</span>
+            </div>
+
+            <div class="back-login">
+              <a href="login.php">Back to Login</a>
+            </div>
+          </form>
+        <?php endif; ?>
+      </div>
     </div>
+  </div>
 
-    <script>
-        const passwordInput = document.getElementById('password');
-        const confirmPasswordInput = document.getElementById('confirm_password');
-        const strengthBar = document.getElementById('strengthBar');
-        const submitBtn = document.getElementById('submitBtn');
-        const resetForm = document.getElementById('resetForm');
+  <script>
+    function togglePassword(inputId, iconId) {
+      const passwordInput = document.getElementById(inputId);
+      const eyeIcon = document.getElementById(iconId);
+      
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+      } else {
+        passwordInput.type = 'password';
+        eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+      }
+    }
 
-        // Password strength checker
-        passwordInput.addEventListener('input', function() {
-            const password = this.value;
-            let strength = 0;
+    const passwordInput = document.getElementById('password');
+    const strengthBar = document.getElementById('strengthBar');
 
-            // Check requirements
-            const hasLength = password.length >= 8;
-            const hasUppercase = /[A-Z]/.test(password);
-            const hasLowercase = /[a-z]/.test(password);
-            const hasNumber = /\d/.test(password);
+    if (passwordInput && strengthBar) {
+      passwordInput.addEventListener('input', function() {
+        const password = this.value;
+        let strength = 0;
 
-            document.getElementById('req-length').classList.toggle('valid', hasLength);
-            document.getElementById('req-uppercase').classList.toggle('valid', hasUppercase);
-            document.getElementById('req-lowercase').classList.toggle('valid', hasLowercase);
-            document.getElementById('req-number').classList.toggle('valid', hasNumber);
+        // Check requirements
+        const hasLength = password.length >= 8;
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumber = /\d/.test(password);
+        const hasSpecial = /[^A-Za-z0-9]/.test(password);
 
-            if (hasLength) strength++;
-            if (hasUppercase) strength++;
-            if (hasLowercase) strength++;
-            if (hasNumber) strength++;
-            if (/[^A-Za-z0-9]/.test(password)) strength++;
+        // Update requirement indicators
+        document.getElementById('req-length').classList.toggle('met', hasLength);
+        document.getElementById('req-case').classList.toggle('met', hasUpperCase && hasLowerCase);
+        document.getElementById('req-number').classList.toggle('met', hasNumber);
+        document.getElementById('req-special').classList.toggle('met', hasSpecial);
 
-            strengthBar.className = 'strength-fill';
-            if (strength <= 2) {
-                strengthBar.classList.add('strength-weak');
-            } else if (strength <= 4) {
-                strengthBar.classList.add('strength-medium');
-            } else {
-                strengthBar.classList.add('strength-strong');
-            }
-        });
+        // Calculate strength
+        if (password.length >= 8) strength++;
+        if (password.length >= 12) strength++;
+        if (hasNumber) strength++;
+        if (hasUpperCase && hasLowerCase) strength++;
+        if (hasSpecial) strength++;
 
-        // Form validation
-        resetForm.addEventListener('submit', function(e) {
-            const password = passwordInput.value;
-            const confirmPassword = confirmPasswordInput.value;
+        strengthBar.className = 'strength-fill';
+        if (strength <= 2) {
+          strengthBar.classList.add('strength-weak');
+        } else if (strength <= 4) {
+          strengthBar.classList.add('strength-medium');
+        } else {
+          strengthBar.classList.add('strength-strong');
+        }
+      });
+    }
 
-            if (password !== confirmPassword) {
-                e.preventDefault();
-                alert('Passwords do not match!');
-                return false;
-            }
+    const resetForm = document.getElementById('resetForm');
+    if (resetForm) {
+      resetForm.addEventListener('submit', function(e) {
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm_password').value;
 
-            if (password.length < 8) {
-                e.preventDefault();
-                alert('Password must be at least 8 characters long!');
-                return false;
-            }
+        // Check if passwords match
+        if (password !== confirmPassword) {
+          e.preventDefault();
+          alert('Passwords do not match!');
+          return false;
+        }
 
-            if (!/[A-Z]/.test(password)) {
-                e.preventDefault();
-                alert('Password must contain at least one uppercase letter!');
-                return false;
-            }
+        // Validate all requirements
+        const hasLength = password.length >= 8;
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumber = /\d/.test(password);
+        const hasSpecial = /[^A-Za-z0-9]/.test(password);
 
-            if (!/[a-z]/.test(password)) {
-                e.preventDefault();
-                alert('Password must contain at least one lowercase letter!');
-                return false;
-            }
+        if (!hasLength) {
+          e.preventDefault();
+          alert('Password must be at least 8 characters long!');
+          return false;
+        }
 
-            if (!/\d/.test(password)) {
-                e.preventDefault();
-                alert('Password must contain at least one number!');
-                return false;
-            }
-        });
-    </script>
+        if (!hasUpperCase || !hasLowerCase) {
+          e.preventDefault();
+          alert('Password must contain both uppercase and lowercase letters!');
+          return false;
+        }
+
+        if (!hasNumber) {
+          e.preventDefault();
+          alert('Password must contain at least one number!');
+          return false;
+        }
+
+        if (!hasSpecial) {
+          e.preventDefault();
+          alert('Password must contain at least one special character!');
+          return false;
+        }
+      });
+    }
+  </script>
 </body>
-</html>
+</html> 

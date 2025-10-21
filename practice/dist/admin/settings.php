@@ -40,6 +40,21 @@ $result = $stmt->get_result();
 $current_user = $result->fetch_assoc();
 $stmt->close();
 
+// Fetch security settings
+$security_settings = [];
+$result = $conn->query("SELECT * FROM security_settings LIMIT 1");
+if ($result && $result->num_rows > 0) {
+    $security_settings = $result->fetch_assoc();
+} else {
+    // Default values if table doesn't exist
+    $security_settings = [
+        'password_min_length' => 8,
+        'require_special_chars' => 1,
+        'require_numbers' => 1,
+        'require_uppercase' => 1
+    ];
+}
+
 // Set default profile picture if not exists
 if (empty($current_user['profile_picture']) || $current_user['profile_picture'] == '../assets/images/default-avatar.png') {
     $current_user['profile_picture'] = '../assets/images/default-avatar.png';
@@ -144,35 +159,72 @@ if (isset($_POST['update_budget'])) {
     $stmt->close();
 }
 
-// Handle Password Change
+// Handle Password Change with security validation
 if (isset($_POST['change_password'])) {
     $current_password = $_POST['current_password'];
     $new_password = $_POST['new_password'];
     $confirm_password = $_POST['confirm_password'];
     
-    if ($new_password === $confirm_password) {
-        if (password_verify($current_password, $current_user['password'])) {
-            $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-            
-            $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
-            $stmt->bind_param("si", $hashed_password, $user_id);
-            
-            if ($stmt->execute()) {
-                $message = "Password changed successfully!";
-                $message_type = "success";
-            } else {
-                $message = "Failed to change password.";
-                $message_type = "danger";
-            }
-            $stmt->close();
-        } else {
-            $message = "Current password is incorrect.";
-            $message_type = "danger";
-        }
-    } else {
+    // Validate password against security settings
+    $password_errors = [];
+    
+    // Check minimum length
+    if (strlen($new_password) < $security_settings['password_min_length']) {
+        $password_errors[] = "Password must be at least " . $security_settings['password_min_length'] . " characters long.";
+    }
+    
+    // Check for special characters
+    if ($security_settings['require_special_chars'] && !preg_match('/[!@#$%^&*(),.?":{}|<>]/', $new_password)) {
+        $password_errors[] = "Password must contain at least one special character (!@#$%^&*).";
+    }
+    
+    // Check for numbers
+    if ($security_settings['require_numbers'] && !preg_match('/[0-9]/', $new_password)) {
+        $password_errors[] = "Password must contain at least one number (0-9).";
+    }
+    
+    // Check for uppercase letters
+    if ($security_settings['require_uppercase'] && !preg_match('/[A-Z]/', $new_password)) {
+        $password_errors[] = "Password must contain at least one uppercase letter (A-Z).";
+    }
+    
+    if (!empty($password_errors)) {
+        $message = implode("<br>", $password_errors);
+        $message_type = "danger";
+    } elseif ($new_password !== $confirm_password) {
         $message = "New passwords do not match.";
         $message_type = "warning";
+    } elseif (!password_verify($current_password, $current_user['password'])) {
+        $message = "Current password is incorrect.";
+        $message_type = "danger";
+    } else {
+        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+        
+        $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+        $stmt->bind_param("si", $hashed_password, $user_id);
+        
+        if ($stmt->execute()) {
+            $message = "Password changed successfully!";
+            $message_type = "success";
+        } else {
+            $message = "Failed to change password.";
+            $message_type = "danger";
+        }
+        $stmt->close();
     }
+}
+
+// Build password requirements text dynamically
+$password_requirements = [];
+$password_requirements[] = "Minimum " . $security_settings['password_min_length'] . " characters";
+if ($security_settings['require_special_chars']) {
+    $password_requirements[] = "Include special characters (!@#$%^&*)";
+}
+if ($security_settings['require_numbers']) {
+    $password_requirements[] = "Include numbers (0-9)";
+}
+if ($security_settings['require_uppercase']) {
+    $password_requirements[] = "Include uppercase letters (A-Z)";
 }
 ?>
 <!doctype html>
@@ -655,6 +707,27 @@ if (isset($_POST['change_password'])) {
         grid-template-columns: 1fr;
       }
     }
+
+    /* Password strength indicator */
+    .password-strength {
+      margin-top: 10px;
+      height: 4px;
+      border-radius: 2px;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+
+    .password-strength-bar {
+      height: 100%;
+      transition: all 0.3s;
+      width: 0%;
+    }
+
+    .password-strength-text {
+      font-size: 0.85rem;
+      margin-top: 5px;
+      font-weight: 600;
+    }
   </style>
 </head>
 
@@ -881,7 +954,7 @@ if (isset($_POST['change_password'])) {
               <h6>Security Settings</h6>
             </div>
             <div class="card-body">
-              <form method="POST">
+              <form method="POST" id="passwordForm">
                 <div class="form-row">
                   <div class="form-group">
                     <label><i class="feather icon-key" style="margin-right: 5px;"></i> Current Password</label>
@@ -907,7 +980,8 @@ if (isset($_POST['change_password'])) {
                              name="new_password" 
                              id="new_password"
                              placeholder="Enter new password"
-                             minlength="8"
+                             minlength="<?php echo $security_settings['password_min_length']; ?>"
+                             oninput="checkPasswordStrength()"
                              required>
                       <span class="toggle-password" onclick="togglePasswordField('new_password', 'eye-icon-new')">
                         <svg id="eye-icon-new" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -916,6 +990,10 @@ if (isset($_POST['change_password'])) {
                         </svg>
                       </span>
                     </div>
+                    <div class="password-strength">
+                      <div class="password-strength-bar" id="strength-bar"></div>
+                    </div>
+                    <div class="password-strength-text" id="strength-text"></div>
                   </div>
                 </div>
                 
@@ -926,7 +1004,7 @@ if (isset($_POST['change_password'])) {
                            name="confirm_password" 
                            id="confirm_password"
                            placeholder="Re-enter new password"
-                           minlength="8"
+                           minlength="<?php echo $security_settings['password_min_length']; ?>"
                            required>
                     <span class="toggle-password" onclick="togglePasswordField('confirm_password', 'eye-icon-confirm')">
                       <svg id="eye-icon-confirm" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -941,9 +1019,9 @@ if (isset($_POST['change_password'])) {
                   <i class="feather icon-shield"></i>
                   <div>
                     <strong>Password Requirements:</strong><br>
-                    • Minimum 8 characters<br>
-                    • Include numbers and special characters<br>
-                    • Avoid common words or patterns
+                    <?php foreach ($password_requirements as $requirement): ?>
+                      • <?php echo $requirement; ?><br>
+                    <?php endforeach; ?>
                   </div>
                 </div>
 
@@ -1010,6 +1088,14 @@ if (isset($_POST['change_password'])) {
   <script src="../assets/js/script.js"></script>
 
   <script>
+    // Security settings from PHP
+    const securitySettings = {
+      minLength: <?php echo $security_settings['password_min_length']; ?>,
+      requireSpecialChars: <?php echo $security_settings['require_special_chars'] ? 'true' : 'false'; ?>,
+      requireNumbers: <?php echo $security_settings['require_numbers'] ? 'true' : 'false'; ?>,
+      requireUppercase: <?php echo $security_settings['require_uppercase'] ? 'true' : 'false'; ?>
+    };
+
     // Toggle password visibility
     function togglePasswordField(inputId, iconId) {
       const passwordInput = document.getElementById(inputId);
@@ -1023,6 +1109,112 @@ if (isset($_POST['change_password'])) {
         eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
       }
     }
+
+    // Check password strength based on security settings
+    function checkPasswordStrength() {
+      const password = document.getElementById('new_password').value;
+      const strengthBar = document.getElementById('strength-bar');
+      const strengthText = document.getElementById('strength-text');
+      
+      let strength = 0;
+      let feedback = [];
+      
+      // Check length
+      if (password.length >= securitySettings.minLength) {
+        strength += 25;
+      } else {
+        feedback.push(`At least ${securitySettings.minLength} characters`);
+      }
+      
+      // Check special characters
+      if (securitySettings.requireSpecialChars) {
+        if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+          strength += 25;
+        } else {
+          feedback.push('Special character (!@#$%^&*)');
+        }
+      } else {
+        strength += 25; // Skip if not required
+      }
+      
+      // Check numbers
+      if (securitySettings.requireNumbers) {
+        if (/[0-9]/.test(password)) {
+          strength += 25;
+        } else {
+          feedback.push('Number (0-9)');
+        }
+      } else {
+        strength += 25; // Skip if not required
+      }
+      
+      // Check uppercase
+      if (securitySettings.requireUppercase) {
+        if (/[A-Z]/.test(password)) {
+          strength += 25;
+        } else {
+          feedback.push('Uppercase letter (A-Z)');
+        }
+      } else {
+        strength += 25; // Skip if not required
+      }
+      
+      // Update strength bar
+      strengthBar.style.width = strength + '%';
+      
+      if (strength === 0) {
+        strengthBar.style.background = '#e5e7eb';
+        strengthText.style.color = '#6b7280';
+        strengthText.textContent = '';
+      } else if (strength < 50) {
+        strengthBar.style.background = '#ef4444';
+        strengthText.style.color = '#ef4444';
+        strengthText.textContent = 'Weak - Missing: ' + feedback.join(', ');
+      } else if (strength < 100) {
+        strengthBar.style.background = '#f59e0b';
+        strengthText.style.color = '#f59e0b';
+        strengthText.textContent = 'Fair - Missing: ' + feedback.join(', ');
+      } else {
+        strengthBar.style.background = '#10b981';
+        strengthText.style.color = '#10b981';
+        strengthText.textContent = 'Strong - All requirements met!';
+      }
+    }
+
+    // Validate password on form submit
+    document.getElementById('passwordForm').addEventListener('submit', function(e) {
+      const password = document.getElementById('new_password').value;
+      const confirmPassword = document.getElementById('confirm_password').value;
+      
+      let errors = [];
+      
+      // Check all requirements
+      if (password.length < securitySettings.minLength) {
+        errors.push(`Password must be at least ${securitySettings.minLength} characters long.`);
+      }
+      
+      if (securitySettings.requireSpecialChars && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+        errors.push('Password must contain at least one special character (!@#$%^&*).');
+      }
+      
+      if (securitySettings.requireNumbers && !/[0-9]/.test(password)) {
+        errors.push('Password must contain at least one number (0-9).');
+      }
+      
+      if (securitySettings.requireUppercase && !/[A-Z]/.test(password)) {
+        errors.push('Password must contain at least one uppercase letter (A-Z).');
+      }
+      
+      if (password !== confirmPassword) {
+        errors.push('Passwords do not match.');
+      }
+      
+      if (errors.length > 0) {
+        e.preventDefault();
+        alert(errors.join('\n'));
+        return false;
+      }
+    });
 
     function previewFile() {
       const file = document.getElementById('profile_picture').files[0];
@@ -1078,26 +1270,22 @@ if (isset($_POST['change_password'])) {
       const monthly = parseFloat(document.getElementById('monthly_budget').value) || 0;
 
       if (changedField === 'daily' && daily > 0) {
-        // Daily changed: calculate weekly (7 days) and monthly (30 days)
         document.getElementById('weekly_budget').value = (daily * 7).toFixed(2);
         document.getElementById('monthly_budget').value = (daily * 30).toFixed(2);
       } else if (changedField === 'weekly' && weekly > 0) {
-        // Weekly changed: calculate daily (weekly/7) and monthly (weekly*4.33)
         document.getElementById('daily_budget').value = (weekly / 7).toFixed(2);
         document.getElementById('monthly_budget').value = (weekly * 4.33).toFixed(2);
       } else if (changedField === 'monthly' && monthly > 0) {
-        // Monthly changed: calculate daily (monthly/30) and weekly (monthly/4.33)
         document.getElementById('daily_budget').value = (monthly / 30).toFixed(2);
         document.getElementById('weekly_budget').value = (monthly / 4.33).toFixed(2);
       }
     }
 
     // Password confirmation validation
-    const newPasswordInput = document.querySelector('input[name="new_password"]');
     const confirmPasswordInput = document.querySelector('input[name="confirm_password"]');
-
     if (confirmPasswordInput) {
       confirmPasswordInput.addEventListener('input', function() {
+        const newPasswordInput = document.querySelector('input[name="new_password"]');
         if (newPasswordInput.value !== confirmPasswordInput.value) {
           confirmPasswordInput.setCustomValidity('Passwords do not match');
         } else {

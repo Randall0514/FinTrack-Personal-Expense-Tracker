@@ -126,7 +126,7 @@ $userData['profile_picture'] = $userData['profile_picture'] ?? '../assets/images
 $userData['fullname'] = $userData['fullname'] ?? 'User';
 $userData['email'] = $userData['email'] ?? 'user@example.com';
 
-// ===================== NOTIFICATION SYSTEM - COMPLETE FIX =====================
+// ===================== NOTIFICATION SYSTEM =====================
 $notifications = [];
 $notification_keys = [];
 
@@ -207,46 +207,13 @@ $dailyPercentage = $dailyBudget > 0 ? ($dailySpending / $dailyBudget) * 100 : 0;
 $weeklyPercentage = $weeklyBudget > 0 ? ($weeklySpending / $weeklyBudget) * 100 : 0;
 $monthlyPercentage = $monthlyBudget > 0 ? ($monthlySpending / $monthlyBudget) * 100 : 0;
 
-// ==================== DEBUG OUTPUT (TEMPORARY - VIEW IN PAGE SOURCE) ====================
-echo "<!--
-=== BUDGET NOTIFICATION DEBUG ===
-User ID: {$user_id}
-Today's Date: {$today}
-Week: {$weekStart} to {$weekEnd}
-Month: {$currentMonth}
-
-DAILY:
-- Budget: ₱" . number_format($dailyBudget, 2) . "
-- Spending: ₱" . number_format($dailySpending, 2) . "
-- Percentage: " . number_format($dailyPercentage, 2) . "%
-- Exceeded: " . ($dailySpending > $dailyBudget ? 'YES' : 'NO') . "
-- Should Show: " . ($dailySpending > $dailyBudget ? 'EXCEEDED' : ($dailyPercentage >= 80 ? 'WARNING' : ($dailyPercentage >= 60 ? 'INFO' : 'NONE'))) . "
-
-WEEKLY:
-- Budget: ₱" . number_format($weeklyBudget, 2) . "
-- Spending: ₱" . number_format($weeklySpending, 2) . "
-- Percentage: " . number_format($weeklyPercentage, 2) . "%
-- Exceeded: " . ($weeklySpending > $weeklyBudget ? 'YES' : 'NO') . "
-- Should Show: " . ($weeklySpending > $weeklyBudget ? 'EXCEEDED' : ($weeklyPercentage >= 80 ? 'WARNING' : ($weeklyPercentage >= 60 ? 'INFO' : 'NONE'))) . "
-
-MONTHLY:
-- Budget: ₱" . number_format($monthlyBudget, 2) . "
-- Spending: ₱" . number_format($monthlySpending, 2) . "
-- Percentage: " . number_format($monthlyPercentage, 2) . "%
-- Exceeded: " . ($monthlySpending > $monthlyBudget ? 'YES' : 'NO') . "
-- Should Show: " . ($monthlySpending > $monthlyBudget ? 'EXCEEDED' : ($monthlyPercentage >= 80 ? 'WARNING' : ($monthlyPercentage >= 60 ? 'INFO' : 'NONE'))) . "
-
-Total Expenses Count: " . count($expenses) . "
--->";
-
 // ==================== DAILY BUDGET NOTIFICATIONS ====================
+// Only show ONE notification per period based on highest severity
 if ($dailySpending > $dailyBudget) {
-    // EXCEEDED (over 100%)
+    // EXCEEDED (over 100%) - Highest priority
     $key = 'daily_budget_exceeded_' . $today;
     $isDismissed = isNotificationDismissed($conn, $user_id, $key);
     $isRead = isNotificationRead($conn, $user_id, $key);
-    
-    echo "<!-- Daily Exceeded Key: {$key}, Dismissed: " . ($isDismissed ? 'YES' : 'NO') . ", Read: " . ($isRead ? 'YES' : 'NO') . " -->";
     
     if (!$isDismissed) {
         $notification_keys[] = $key;
@@ -261,13 +228,11 @@ if ($dailySpending > $dailyBudget) {
             'is_read' => $isRead
         ];
     }
-} elseif ($dailyPercentage >= 80 && $dailyPercentage <= 100) {
+} elseif ($dailyPercentage >= 80) {
     // WARNING (80-100%)
     $key = 'daily_budget_warning_' . $today;
     $isDismissed = isNotificationDismissed($conn, $user_id, $key);
     $isRead = isNotificationRead($conn, $user_id, $key);
-    
-    echo "<!-- Daily Warning Key: {$key}, Dismissed: " . ($isDismissed ? 'YES' : 'NO') . ", Read: " . ($isRead ? 'YES' : 'NO') . " -->";
     
     if (!$isDismissed) {
         $notification_keys[] = $key;
@@ -282,13 +247,11 @@ if ($dailySpending > $dailyBudget) {
             'is_read' => $isRead
         ];
     }
-} elseif ($dailyPercentage >= 60 && $dailyPercentage < 80) {
+} elseif ($dailyPercentage >= 60) {
     // INFO (60-79%)
     $key = 'daily_budget_info_' . $today;
     $isDismissed = isNotificationDismissed($conn, $user_id, $key);
     $isRead = isNotificationRead($conn, $user_id, $key);
-    
-    echo "<!-- Daily Info Key: {$key}, Dismissed: " . ($isDismissed ? 'YES' : 'NO') . ", Read: " . ($isRead ? 'YES' : 'NO') . " -->";
     
     if (!$isDismissed) {
         $notification_keys[] = $key;
@@ -306,13 +269,12 @@ if ($dailySpending > $dailyBudget) {
 }
 
 // ==================== WEEKLY BUDGET NOTIFICATIONS ====================
+// Only show ONE notification per period based on highest severity
 if ($weeklySpending > $weeklyBudget) {
     // EXCEEDED
     $key = 'weekly_budget_exceeded_' . $weekStart;
     $isDismissed = isNotificationDismissed($conn, $user_id, $key);
     $isRead = isNotificationRead($conn, $user_id, $key);
-    
-    echo "<!-- Weekly Exceeded Key: {$key}, Dismissed: " . ($isDismissed ? 'YES' : 'NO') . ", Read: " . ($isRead ? 'YES' : 'NO') . " -->";
     
     if (!$isDismissed) {
         $notification_keys[] = $key;
@@ -327,13 +289,11 @@ if ($weeklySpending > $weeklyBudget) {
             'is_read' => $isRead
         ];
     }
-} elseif ($weeklyPercentage >= 80 && $weeklyPercentage <= 100) {
+} elseif ($weeklyPercentage >= 80) {
     // WARNING (80-100%)
     $key = 'weekly_budget_warning_' . $weekStart;
     $isDismissed = isNotificationDismissed($conn, $user_id, $key);
     $isRead = isNotificationRead($conn, $user_id, $key);
-    
-    echo "<!-- Weekly Warning Key: {$key}, Dismissed: " . ($isDismissed ? 'YES' : 'NO') . ", Read: " . ($isRead ? 'YES' : 'NO') . " -->";
     
     if (!$isDismissed) {
         $notification_keys[] = $key;
@@ -348,13 +308,11 @@ if ($weeklySpending > $weeklyBudget) {
             'is_read' => $isRead
         ];
     }
-} elseif ($weeklyPercentage >= 60 && $weeklyPercentage < 80) {
+} elseif ($weeklyPercentage >= 60) {
     // INFO (60-79%)
     $key = 'weekly_budget_info_' . $weekStart;
     $isDismissed = isNotificationDismissed($conn, $user_id, $key);
     $isRead = isNotificationRead($conn, $user_id, $key);
-    
-    echo "<!-- Weekly Info Key: {$key}, Dismissed: " . ($isDismissed ? 'YES' : 'NO') . ", Read: " . ($isRead ? 'YES' : 'NO') . " -->";
     
     if (!$isDismissed) {
         $notification_keys[] = $key;
@@ -372,13 +330,12 @@ if ($weeklySpending > $weeklyBudget) {
 }
 
 // ==================== MONTHLY BUDGET NOTIFICATIONS ====================
+// Only show ONE notification per period based on highest severity
 if ($monthlySpending > $monthlyBudget) {
     // EXCEEDED
     $key = 'monthly_budget_exceeded_' . $currentMonth;
     $isDismissed = isNotificationDismissed($conn, $user_id, $key);
     $isRead = isNotificationRead($conn, $user_id, $key);
-    
-    echo "<!-- Monthly Exceeded Key: {$key}, Dismissed: " . ($isDismissed ? 'YES' : 'NO') . ", Read: " . ($isRead ? 'YES' : 'NO') . " -->";
     
     if (!$isDismissed) {
         $notification_keys[] = $key;
@@ -393,13 +350,11 @@ if ($monthlySpending > $monthlyBudget) {
             'is_read' => $isRead
         ];
     }
-} elseif ($monthlyPercentage >= 80 && $monthlyPercentage <= 100) {
+} elseif ($monthlyPercentage >= 80) {
     // WARNING (80-100%)
     $key = 'monthly_budget_warning_' . $currentMonth;
     $isDismissed = isNotificationDismissed($conn, $user_id, $key);
     $isRead = isNotificationRead($conn, $user_id, $key);
-    
-    echo "<!-- Monthly Warning Key: {$key}, Dismissed: " . ($isDismissed ? 'YES' : 'NO') . ", Read: " . ($isRead ? 'YES' : 'NO') . " -->";
     
     if (!$isDismissed) {
         $notification_keys[] = $key;
@@ -414,13 +369,11 @@ if ($monthlySpending > $monthlyBudget) {
             'is_read' => $isRead
         ];
     }
-} elseif ($monthlyPercentage >= 60 && $monthlyPercentage < 80) {
+} elseif ($monthlyPercentage >= 60) {
     // INFO (60-79%)
     $key = 'monthly_budget_info_' . $currentMonth;
     $isDismissed = isNotificationDismissed($conn, $user_id, $key);
     $isRead = isNotificationRead($conn, $user_id, $key);
-    
-    echo "<!-- Monthly Info Key: {$key}, Dismissed: " . ($isDismissed ? 'YES' : 'NO') . ", Read: " . ($isRead ? 'YES' : 'NO') . " -->";
     
     if (!$isDismissed) {
         $notification_keys[] = $key;
@@ -437,7 +390,7 @@ if ($monthlySpending > $monthlyBudget) {
     }
 }
 
-// Recent expense notifications (last 7 days)
+// ==================== RECENT EXPENSE NOTIFICATIONS (ONLY ONCE) ====================
 $sevenDaysAgo = date('Y-m-d', strtotime('-7 days'));
 $expenseCount = 0;
 $maxExpensesToShow = 5;
@@ -484,55 +437,8 @@ foreach ($expenses as $expense) {
 // Count UNREAD notifications
 $unreadCount = countUnreadNotifications($conn, $user_id, $notification_keys);
 
-echo "<!-- Total Notifications Generated: " . count($notifications) . " -->";
-echo "<!-- Unread Count: {$unreadCount} -->";
-
-// Recent expense notifications (last 7 DAYS)
-$sevenDaysAgo = date('Y-m-d', strtotime('-7 days'));
-$expenseCount = 0;
-$maxExpensesToShow = 5;
-
-foreach ($expenses as $expense) {
-    if ($expenseCount >= $maxExpensesToShow) break;
-    
-    $expenseDate = $expense['date'];
-    if ($expenseDate >= $sevenDaysAgo) {
-        $expenseTime = strtotime($expense['date']);
-        $currentTime = time();
-        $timeDiff = $currentTime - $expenseTime;
-        
-        $timeAgo = ''; 
-        if ($timeDiff < 3600) {
-            $minutes = floor($timeDiff / 60);
-            $timeAgo = $minutes <= 1 ? 'Just now' : $minutes . ' min ago';
-        } elseif ($timeDiff < 86400) {
-            $hours = floor($timeDiff / 3600);
-            $timeAgo = $hours . ' hour' . ($hours > 1 ? 's' : '') . ' ago';
-        } else {
-            $days = floor($timeDiff / 86400);
-            $timeAgo = $days . ' day' . ($days > 1 ? 's' : '') . ' ago';
-        }
-        
-        $key = 'expense_' . $expense['id'];
-        if (!isNotificationDismissed($conn, $user_id, $key)) {
-            $notification_keys[] = $key;
-            $notifications[] = [
-                'icon' => 'shopping-cart',
-                'color' => 'green',
-                'title' => 'Expense Recorded',
-                'message' => '₱' . number_format($expense['amount'], 2) . ' - ' . $expense['category'],
-                'time' => $timeAgo,
-                'type' => 'success',
-                'key' => $key,
-                'is_read' => isNotificationRead($conn, $user_id, $key)
-            ];
-            $expenseCount++;
-        }
-    }
-}
-
-// Count UNREAD notifications only
-$unreadCount = countUnreadNotifications($conn, $user_id, $notification_keys);
+// Format badge display (show "9+" if more than 9)
+$badgeDisplay = $unreadCount > 9 ? '9+' : $unreadCount;
 ?>
 
 <!-- [ Header Topbar ] start -->
@@ -566,7 +472,7 @@ $unreadCount = countUnreadNotifications($conn, $user_id, $notification_keys);
             <i data-feather="bell"></i>
             <?php if ($unreadCount > 0): ?>
             <span class="notification-badge">
-              <?php echo $unreadCount; ?>
+              <?php echo $badgeDisplay; ?>
             </span>
             <?php endif; ?>
           </a>
@@ -657,8 +563,6 @@ $unreadCount = countUnreadNotifications($conn, $user_id, $notification_keys);
                 </div>
               <?php endif; ?>
             </div>
-            
-
           </div>
         </li>
         <!-- ================= END NOTIFICATION DROPDOWN ================= -->
@@ -1136,7 +1040,6 @@ $unreadCount = countUnreadNotifications($conn, $user_id, $notification_keys);
   color: #64748b;
   margin-bottom: 4px;
 }
-
 
 /* Responsive Design */
 @media (max-width: 640px) {

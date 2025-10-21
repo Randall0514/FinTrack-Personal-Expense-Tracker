@@ -112,18 +112,28 @@ $expenses = [];
 $stmt = $conn->prepare("SELECT * FROM expenses WHERE user_id = ? AND archived = 0 ORDER BY date DESC");
 if ($stmt) {
     $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($result && $result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-            $expenses[] = $row;
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        if ($result && $result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $expenses[] = $row;
+            }
+        } else {
+            // DEBUG: No rows found
+            error_log("No expenses found for user_id: " . $user_id);
         }
+    } else {
+        // DEBUG: Query failed
+        error_log("Query execution failed: " . $stmt->error);
     }
     $stmt->close();
+} else {
+    // DEBUG: Prepare failed
+    error_log("Prepare failed: " . $conn->error);
 }
 
-$totalExpenses = array_sum(array_column($expenses, 'amount'));
+// Calculate totals with proper error handling
+$totalExpenses = !empty($expenses) ? array_sum(array_column($expenses, 'amount')) : 0;
 $expenseCount  = count($expenses);
 
 // Calculate This Month's expenses (only active, non-archived)
@@ -135,6 +145,15 @@ foreach ($expenses as $expense) {
         $thisMonthExpenses += floatval($expense['amount']);
     }
 }
+
+// DEBUG OUTPUT - Add this temporarily to see what's happening
+echo "<!-- DEBUG INFO:
+User ID: $user_id
+Expense Count: $expenseCount
+Total Expenses: $totalExpenses
+This Month Expenses: $thisMonthExpenses
+Expenses Array: " . print_r($expenses, true) . "
+-->";
 ?>
 
 <!doctype html>
@@ -579,6 +598,24 @@ button[onclick*="closeModal"]:hover {
     background-color: #4b5563;
 }
 
+.filter-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-group label {
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+    color: #374151;
+}
+
 /* Loader */
 .loader-bg {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
@@ -608,6 +645,17 @@ button[onclick*="closeModal"]:hover {
     to {
         opacity: 1;
         transform: translateX(0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(50px);
     }
 }
 
@@ -778,14 +826,14 @@ button[onclick*="closeModal"]:hover {
 
                             <!-- Buttons -->
                             <div class="button-group">
-                                <button type="button" class="btn btn-primary">
+                                <button type="button" class="btn btn-primary" onclick="exportToExcel()">
                                     <i class="feather icon-download"></i> Export to Excel
                                 </button>
-                                <button type="button" class="btn btn-info">
+                                <button type="button" class="btn btn-info" onclick="generateReport()">
                                     <i class="feather icon-file-text"></i> Generate Report
                                 </button>
-                                <button type="button" class="btn btn-warning">
-                                    <i class="feather icon-filter"></i> Filter by Category
+                                <button type="button" class="btn btn-warning" onclick="filterByCategoryAndDate()">
+                                    <i class="feather icon-filter"></i> Filter by Category & Date
                                 </button>
                             </div>
                         </div>
@@ -877,6 +925,14 @@ button[onclick*="closeModal"]:hover {
     <script src="../assets/js/script.js"></script>
 
     <script>
+        // Store all expenses data for filtering and exporting
+        const expensesData = <?php echo json_encode($expenses); ?>;
+
+        // DEBUG: Console log to check data
+        console.log('User ID:', <?php echo $user_id; ?>);
+        console.log('Expense Count:', <?php echo $expenseCount; ?>);
+        console.log('Expenses Data:', expensesData);
+
         // Search functionality
         document.getElementById('searchInput').addEventListener('keyup', function() {
             const searchValue = this.value.toLowerCase();
@@ -888,9 +944,304 @@ button[onclick*="closeModal"]:hover {
             });
         });
 
-        // Action functions
-        function viewExpense(id) { 
-            alert('Viewing expense ID: ' + id); 
+        // View Expense - Enhanced with modal
+        function viewExpense(id) {
+            const expense = expensesData.find(e => e.id == id);
+            if (!expense) return;
+
+            const modalContent = `
+                <div style="background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%;">
+                    <h3 style="color: #667eea; font-weight: 700; margin-bottom: 20px;">📋 Expense Details</h3>
+                    <div style="background: #f9fafb; padding: 20px; border-radius: 10px; margin-bottom: 15px;">
+                        <p style="margin: 10px 0;"><strong>Category:</strong> <span class="category-badge">${expense.category}</span></p>
+                        <p style="margin: 10px 0;"><strong>Amount:</strong> <span style="color: #764ba2; font-weight: 700; font-size: 1.2rem;">₱ ${parseFloat(expense.amount).toFixed(2)}</span></p>
+                        <p style="margin: 10px 0;"><strong>Date:</strong> ${new Date(expense.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        <p style="margin: 10px 0;"><strong>Payment Method:</strong> ${expense.payment_method}</p>
+                        <p style="margin: 10px 0;"><strong>Description:</strong> ${expense.description || 'No description provided'}</p>
+                    </div>
+                    <button onclick="closeViewModal()" style="background: #6b7280; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%;">Close</button>
+                </div>
+            `;
+
+            const modal = document.createElement('div');
+            modal.id = 'viewModal';
+            modal.className = 'modal';
+            modal.style.display = 'flex';
+            modal.innerHTML = modalContent;
+            document.body.appendChild(modal);
+        }
+
+        function closeViewModal() {
+            const modal = document.getElementById('viewModal');
+            if (modal) modal.remove();
+        }
+
+        // Export to Excel
+        function exportToExcel() {
+            let csv = [];
+            
+            // Add header row
+            const headerRow = ['No', 'Date', 'Category', 'Amount', 'Description', 'Payment Method'];
+            csv.push(headerRow.join(','));
+            
+            // Add data rows
+            expensesData.forEach((expense, index) => {
+                const row = [
+                    index + 1,
+                    expense.date,
+                    `"${expense.category}"`,
+                    `"₱ ${parseFloat(expense.amount).toFixed(2)}"`,
+                    `"${expense.description.replace(/"/g, '""')}"`,
+                    `"${expense.payment_method}"`
+                ];
+                csv.push(row.join(','));
+            });
+            
+            const csvContent = csv.join('\n');
+            
+            // ✅ Add UTF-8 BOM (Byte Order Mark) for proper Excel encoding
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'expenses_' + new Date().toISOString().split('T')[0] + '.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Show success message
+            showNotification('✅ Expenses exported successfully!', 'success');
+        }
+
+        // Generate Report
+        function generateReport() {
+            const totalExpenses = expensesData.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+            const categoryTotals = {};
+            const paymentMethodTotals = {};
+
+            expensesData.forEach(expense => {
+                // Category totals
+                if (!categoryTotals[expense.category]) {
+                    categoryTotals[expense.category] = 0;
+                }
+                categoryTotals[expense.category] += parseFloat(expense.amount);
+
+                // Payment method totals
+                if (!paymentMethodTotals[expense.payment_method]) {
+                    paymentMethodTotals[expense.payment_method] = 0;
+                }
+                paymentMethodTotals[expense.payment_method] += parseFloat(expense.amount);
+            });
+
+            let reportHTML = `
+                <div style="background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                    <h3 style="color: #667eea; font-weight: 700; margin-bottom: 20px;">📊 Expense Report</h3>
+                    
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+                        <h4 style="margin: 0 0 10px 0;">Total Expenses</h4>
+                        <h2 style="margin: 0; font-size: 2rem;">₱ ${totalExpenses.toFixed(2)}</h2>
+                        <p style="margin: 10px 0 0 0; opacity: 0.9;">${expensesData.length} transactions</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: #374151; font-weight: 700; margin-bottom: 15px;">By Category</h4>
+                        ${Object.entries(categoryTotals).map(([category, amount]) => `
+                            <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 600;">${category}</span>
+                                <span style="color: #764ba2; font-weight: 700;">₱ ${amount.toFixed(2)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: #374151; font-weight: 700; margin-bottom: 15px;">By Payment Method</h4>
+                        ${Object.entries(paymentMethodTotals).map(([method, amount]) => `
+                            <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 600;">${method}</span>
+                                <span style="color: #764ba2; font-weight: 700;">₱ ${amount.toFixed(2)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <button onclick="closeReportModal()" style="background: #6b7280; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px;">Close</button>
+                </div>
+            `;
+
+            const modal = document.createElement('div');
+            modal.id = 'reportModal';
+            modal.className = 'modal';
+            modal.style.display = 'flex';
+            modal.innerHTML = reportHTML;
+            document.body.appendChild(modal);
+        }
+
+        function closeReportModal() {
+            const modal = document.getElementById('reportModal');
+            if (modal) modal.remove();
+        }
+
+        // Enhanced Filter by Category and Date
+        function filterByCategoryAndDate() {
+            const categories = [...new Set(expensesData.map(e => e.category))].sort();
+            
+            let filterHTML = `
+                <div style="background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                    <h3 style="color: #667eea; font-weight: 700; margin-bottom: 20px;">🔍 Filter Expenses</h3>
+                    
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label>From Date:</label>
+                            <input type="date" id="filterFromDate" style="width: 100%; padding: 8px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                        </div>
+                        <div class="filter-group">
+                            <label>To Date:</label>
+                            <input type="date" id="filterToDate" style="width: 100%; padding: 8px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                        </div>
+                    </div>
+
+                    <div class="filter-group" style="margin-bottom: 20px;">
+                        <label>Category:</label>
+                        <select id="filterCategory" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; font-weight: 600;">
+                            <option value="all">All Categories</option>
+                            ${categories.map(cat => `<option value="${cat}">${cat}</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button onclick="applyAdvancedFilter()" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                            <i class="feather icon-check"></i> Apply Filter
+                        </button>
+                        <button onclick="clearFilters()" style="flex: 1; background: #f59e0b; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                            <i class="feather icon-x"></i> Clear
+                        </button>
+                    </div>
+                    
+                    <button onclick="closeAdvancedFilterModal()" style="background: #6b7280; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px;">Close</button>
+                </div>
+            `;
+
+            const modal = document.createElement('div');
+            modal.id = 'advancedFilterModal';
+            modal.className = 'modal';
+            modal.style.display = 'flex';
+            modal.innerHTML = filterHTML;
+            document.body.appendChild(modal);
+        }
+
+        function applyAdvancedFilter() {
+            const fromDate = document.getElementById('filterFromDate').value;
+            const toDate = document.getElementById('filterToDate').value;
+            const category = document.getElementById('filterCategory').value;
+            
+            const tableRows = document.querySelectorAll('#expenseTableBody tr');
+            let visibleCount = 0;
+            
+            tableRows.forEach(row => {
+                // Skip if it's the "no expenses" row
+                if (row.cells.length < 7) {
+                    row.style.display = 'none';
+                    return;
+                }
+
+                const rowCategory = row.cells[1].textContent.trim();
+                const rowDateCell = row.cells[3].textContent.trim();
+                
+                // Find matching expense data by category and approximate date
+                const expense = expensesData.find(e => {
+                    const expenseDate = new Date(e.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                    return expenseDate === rowDateCell && e.category === rowCategory;
+                });
+                
+                if (!expense) {
+                    row.style.display = 'none';
+                    return;
+                }
+                
+                const rowDate = expense.date; // Use the actual date from data (YYYY-MM-DD format)
+                
+                let showRow = true;
+                
+                // Filter by category
+                if (category !== 'all' && rowCategory !== category) {
+                    showRow = false;
+                }
+                
+                // Filter by from date
+                if (fromDate && rowDate < fromDate) {
+                    showRow = false;
+                }
+                
+                // Filter by to date
+                if (toDate && rowDate > toDate) {
+                    showRow = false;
+                }
+                
+                row.style.display = showRow ? '' : 'none';
+                if (showRow) visibleCount++;
+            });
+
+            closeAdvancedFilterModal();
+            
+            let filterMessage = '🔍 Filters applied';
+            if (category !== 'all') filterMessage += `: ${category}`;
+            if (fromDate || toDate) {
+                filterMessage += ' | Date: ';
+                if (fromDate) filterMessage += `From ${new Date(fromDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+                if (toDate) filterMessage += ` To ${new Date(toDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+            }
+            filterMessage += ` (${visibleCount} result${visibleCount !== 1 ? 's' : ''})`;
+            
+            showNotification(filterMessage, 'info');
+        }
+
+        function clearFilters() {
+            const tableRows = document.querySelectorAll('#expenseTableBody tr');
+            tableRows.forEach(row => {
+                row.style.display = '';
+            });
+            
+            closeAdvancedFilterModal();
+            showNotification('🔄 All filters cleared - showing all expenses', 'info');
+        }
+
+        function closeAdvancedFilterModal() {
+            const modal = document.getElementById('advancedFilterModal');
+            if (modal) modal.remove();
+        }
+
+        // Notification system
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                border-radius: 10px;
+                color: white;
+                font-weight: 600;
+                z-index: 10000;
+                animation: slideInRight 0.5s ease-out;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            `;
+            
+            if (type === 'success') {
+                notification.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            } else if (type === 'info') {
+                notification.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'fadeOut 0.5s ease-out';
+                setTimeout(() => notification.remove(), 500);
+            }, 3000);
         }
 
         // Layout setup

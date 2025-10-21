@@ -320,6 +320,70 @@
       .strength-weak { width: 33%; background: #ff4444; }
       .strength-medium { width: 66%; background: #ffaa00; }
       .strength-strong { width: 100%; background: #00C851; }
+
+      .password-requirements {
+        background: #f0f7ff;
+        border: 1px solid #bedaff;
+        border-radius: 6px;
+        padding: 8px;
+        margin-top: 5px;
+        display: none;
+        animation: slideDown 0.3s ease-out;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .password-requirements.show {
+        display: block;
+      }
+
+      .password-requirements h4 {
+        color: #0066cc;
+        font-size: 0.7rem;
+        margin-bottom: 5px;
+      }
+
+      .password-requirements ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .password-requirements li {
+        color: #333;
+        font-size: 0.65rem;
+        font-weight: 600;
+        padding: 2px 0;
+        padding-left: 15px;
+        position: relative;
+      }
+
+      .password-requirements li::before {
+        content: '✓';
+        position: absolute;
+        left: 0;
+        color: #ccc;
+        font-weight: bold;
+        font-size: 0.75rem;
+        transition: color 0.3s;
+      }
+
+      .password-requirements li.met {
+        color: #00C851;
+      }
+
+      .password-requirements li.met::before {
+        color: #00C851;
+      }
     </style>
     <script>
       function togglePassword(inputId, iconId) {
@@ -386,6 +450,15 @@
                   <div class="strength-fill" id="strengthBar"></div>
                 </div>
               </div>
+              <div class="password-requirements" id="passwordRequirements">
+                <h4>Password Requirements:</h4>
+                <ul>
+                  <li id="req-length">At least 8 characters long</li>
+                  <li id="req-case">Contains uppercase and lowercase letters</li>
+                  <li id="req-number">Includes at least one number</li>
+                  <li id="req-special">Has at least one special character</li>
+                </ul>
+              </div>
             </div>
 
             <div class="form-group">
@@ -421,16 +494,39 @@
     <script>
       const passwordInput = document.getElementById('password');
       const strengthBar = document.getElementById('strengthBar');
+      const passwordRequirements = document.getElementById('passwordRequirements');
 
       passwordInput.addEventListener('input', function() {
         const password = this.value;
+        
+        // Show/hide requirements box based on input
+        if (password.length > 0) {
+          passwordRequirements.classList.add('show');
+        } else {
+          passwordRequirements.classList.remove('show');
+        }
+
         let strength = 0;
 
+        // Check requirements
+        const hasLength = password.length >= 8;
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumber = /\d/.test(password);
+        const hasSpecial = /[^A-Za-z0-9]/.test(password);
+
+        // Update requirement indicators
+        document.getElementById('req-length').classList.toggle('met', hasLength);
+        document.getElementById('req-case').classList.toggle('met', hasUpperCase && hasLowerCase);
+        document.getElementById('req-number').classList.toggle('met', hasNumber);
+        document.getElementById('req-special').classList.toggle('met', hasSpecial);
+
+        // Calculate strength
         if (password.length >= 8) strength++;
         if (password.length >= 12) strength++;
-        if (/\d/.test(password)) strength++;
-        if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
-        if (/[^A-Za-z0-9]/.test(password)) strength++;
+        if (hasNumber) strength++;
+        if (hasUpperCase && hasLowerCase) strength++;
+        if (hasSpecial) strength++;
 
         strengthBar.className = 'strength-fill';
         if (strength <= 2) {
@@ -446,12 +542,42 @@
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirm_password').value;
 
+        // Check if passwords match
         if (password !== confirmPassword) {
           e.preventDefault();
           alert('Passwords do not match!');
-        } else if (password.length < 8) {
+          return false;
+        }
+
+        // Validate all requirements
+        const hasLength = password.length >= 8;
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumber = /\d/.test(password);
+        const hasSpecial = /[^A-Za-z0-9]/.test(password);
+
+        if (!hasLength) {
           e.preventDefault();
           alert('Password must be at least 8 characters long!');
+          return false;
+        }
+
+        if (!hasUpperCase || !hasLowerCase) {
+          e.preventDefault();
+          alert('Password must contain both uppercase and lowercase letters!');
+          return false;
+        }
+
+        if (!hasNumber) {
+          e.preventDefault();
+          alert('Password must contain at least one number!');
+          return false;
+        }
+
+        if (!hasSpecial) {
+          e.preventDefault();
+          alert('Password must contain at least one special character!');
+          return false;
         }
       });
     </script>

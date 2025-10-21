@@ -780,7 +780,7 @@ unset($data); // Break reference
                 '<div class="empty-state"><i class="feather icon-credit-card"></i><p>No payment method data available</p></div>';
         }
 
-        // Export to Excel function
+        // ✅ Export to Excel function with UTF-8 BOM fix
         function exportToExcel() {
             const table = document.getElementById('expensesTable');
             let csv = [];
@@ -798,7 +798,10 @@ unset($data); // Break reference
             }
             
             const csvContent = csv.join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            
+            // ✅ Add UTF-8 BOM (Byte Order Mark) for proper Excel encoding
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             
