@@ -90,6 +90,7 @@ if (isset($_POST['export_data'])) {
 <head>
   <title>FinTrack - My Profile</title>
   <meta charset="utf-8" />
+  <link rel="icon" type="image/png" href="../../logo.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
