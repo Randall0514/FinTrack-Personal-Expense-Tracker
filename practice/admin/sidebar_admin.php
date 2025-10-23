@@ -362,32 +362,34 @@ $current_page = basename($_SERVER['PHP_SELF']);
         /* ==================== MAIN CONTENT ==================== */
         .main-content {
             margin-left: 280px;
-            padding: 30px 40px;
+            padding: 40px;
+            min-height: 100vh;
         }
 
-        .header {
+        .page-header {
+            background: white;
+            padding: 32px;
+            border-radius: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            margin-bottom: 32px;
+        }
+
+        .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 40px;
-            padding: 25px 30px;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
         }
 
         .page-title {
             font-size: 32px;
-            font-weight: 700;
-            color: #1a202c;
-            letter-spacing: -0.5px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 6px;
         }
 
         .page-subtitle {
-            font-size: 14px;
-            color: #718096;
-            margin-top: 5px;
-            font-weight: 400;
+            font-size: 15px;
+            color: #64748b;
         }
 
         .header-user {
@@ -411,7 +413,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         .header-user-name {
             font-weight: 600;
             font-size: 15px;
-            color: #2d3748;
+            color: #1e293b;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -430,43 +432,32 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
         .header-user-email {
             font-size: 13px;
-            color: #718096;
+            color: #64748b;
         }
 
-        .dashboard-cards {
+        /* Dashboard Cards */
+        .cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
         }
 
         .stat-card {
             background: white;
-            border-radius: 16px;
-            padding: 25px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            padding: 28px;
+            border-radius: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
             transition: all 0.3s ease;
-            border: 1px solid #f0f4f8;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: var(--card-color);
+            border: 1px solid #f1f5f9;
         }
 
         .stat-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
         }
 
-        .stat-card-header {
+        .stat-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
@@ -474,180 +465,62 @@ $current_page = basename($_SERVER['PHP_SELF']);
         }
 
         .stat-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: 12px;
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: 24px;
             color: white;
-            background: var(--card-color);
+        }
+
+        .stat-icon.blue {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        .stat-icon.purple {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+
+        .stat-icon.green {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        }
+
+        .stat-icon.orange {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
         }
 
         .stat-value {
             font-size: 36px;
-            font-weight: 700;
-            color: #1a202c;
+            font-weight: 800;
+            color: #0f172a;
             line-height: 1;
             margin-bottom: 8px;
         }
 
         .stat-label {
             font-size: 14px;
-            color: #718096;
+            color: #64748b;
             font-weight: 500;
         }
 
         .stat-trend {
-            font-size: 13px;
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid #f0f4f8;
-            color: #48bb78;
-            font-weight: 500;
-        }
-
-        .stat-trend i {
-            margin-right: 4px;
-        }
-
-        .data-table {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-            margin-bottom: 30px;
-            border: 1px solid #f0f4f8;
-        }
-
-        .table-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #f7fafc;
-        }
-
-        .table-title {
-            font-weight: 700;
-            font-size: 20px;
-            color: #1a202c;
-            letter-spacing: -0.3px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border-radius: 10px;
-            border: none;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-
-        th {
-            padding: 14px 16px;
-            text-align: left;
-            font-weight: 600;
+            gap: 6px;
             font-size: 13px;
-            color: #4a5568;
-            background: #f7fafc;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #f1f5f9;
         }
 
-        th:first-child {
-            border-radius: 10px 0 0 10px;
+        .stat-trend.up {
+            color: #22c55e;
         }
 
-        th:last-child {
-            border-radius: 0 10px 10px 0;
-        }
-
-        td {
-            padding: 16px;
-            border-bottom: 1px solid #f0f4f8;
-            font-size: 14px;
-            color: #2d3748;
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        tr:hover td {
-            background-color: #f8fafc;
-        }
-
-        .status {
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-            display: inline-block;
-        }
-
-        .status-approved {
-            background-color: #c6f6d5;
-            color: #22543d;
-        }
-
-        .status-pending {
-            background-color: #feebc8;
-            color: #7c2d12;
-        }
-
-        .status-enabled {
-            background-color: #bee3f8;
-            color: #2c5282;
-        }
-
-        .status-disabled {
-            background-color: #fed7d7;
-            color: #742a2a;
-        }
-
-        .action-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 8px 12px;
-            border-radius: 8px;
-            transition: all 0.2s;
-            color: #718096;
-        }
-
-        .action-btn:hover {
-            background-color: #f0f4f8;
-            color: #3b82f6;
-        }
-
-        .action-btn.delete:hover {
-            background-color: #fff5f5;
-            color: #e53e3e;
+        .stat-trend.down {
+            color: #ef4444;
         }
 
         /* ==================== RESPONSIVE ==================== */
@@ -708,13 +581,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 padding: 20px;
             }
 
-            .header {
+            .header-content {
                 flex-direction: column;
                 gap: 20px;
                 text-align: center;
             }
 
-            .dashboard-cards {
+            .cards-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -841,26 +714,28 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
     <!-- MAIN CONTENT -->
     <main class="main-content">
-        <div class="header">
-            <div>
-                <div class="page-title">Dashboard Overview</div>
-                <div class="page-subtitle">Welcome back! Here's what's happening today.</div>
-            </div>
-            <div class="header-user">
-                <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($fullname); ?>&background=3b82f6&color=fff&bold=true" alt="User Avatar" class="header-avatar">
-                <div class="header-user-info">
-                    <div class="header-user-name">
-                        <?php echo htmlspecialchars($fullname); ?>
-                        <span class="admin-badge">Admin</span>
+        <div class="page-header">
+            <div class="header-content">
+                <div>
+                    <h1 class="page-title">Dashboard</h1>
+                    <p class="page-subtitle">Welcome back! Here's what's happening with your platform.</p>
+                </div>
+                <div class="header-user">
+                    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($fullname); ?>&background=3b82f6&color=fff&bold=true" alt="User Avatar" class="header-avatar">
+                    <div class="header-user-info">
+                        <div class="header-user-name">
+                            <?php echo htmlspecialchars($fullname); ?>
+                            <span class="admin-badge">Admin</span>
+                        </div>
+                        <div class="header-user-email"><?php echo htmlspecialchars($email); ?></div>
                     </div>
-                    <div class="header-user-email"><?php echo htmlspecialchars($email); ?></div>
                 </div>
             </div>
         </div>
 
-        <div class="dashboard-cards">
-            <div class="stat-card" style="--card-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <div class="stat-card-header">
+        <div class="cards-grid">
+            <div class="stat-card">
+                <div class="stat-header">
                     <div>
                         <div class="stat-value">
                             <?php
@@ -871,59 +746,56 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         </div>
                         <div class="stat-label">Total Users</div>
                     </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="stat-icon blue">
                         <i class="fas fa-users"></i>
                     </div>
                 </div>
-                <div class="stat-trend">
-                    <i class="fas fa-arrow-up"></i> 12% from last month
+                <div class="stat-trend up">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>12% from last month</span>
                 </div>
             </div>
 
-            <div class="stat-card" style="--card-color: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                <div class="stat-card-header">
+            <div class="stat-card">
+                <div class="stat-header">
                     <div>
                         <div class="stat-value">
                             <?php
-                            $result = $conn->query("SELECT COUNT(*) as total FROM users WHERE is_approved = 0");
+                            $result = $conn->query("SELECT COUNT(*) as total FROM users WHERE is_approved = 0 OR is_approved IS NULL");
                             $row = $result->fetch_assoc();
                             echo $row['total'];
                             ?>
                         </div>
                         <div class="stat-label">Pending Approvals</div>
                     </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                        <i class="fas fa-user-clock"></i>
+                    <div class="stat-icon purple">
+                        <i class="fas fa-clock"></i>
                     </div>
                 </div>
-                <div class="stat-trend" style="color: #f5576c;">
-                    <i class="fas fa-exclamation-circle"></i> Requires attention
+                <div class="stat-trend up">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Requires attention</span>
                 </div>
             </div>
 
-            <div class="stat-card" style="--card-color: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                <div class="stat-card-header">
+            <div class="stat-card">
+                <div class="stat-header">
                     <div>
-                        <div class="stat-value">
-                            <?php
-                            $result = $conn->query("SELECT COUNT(*) as total FROM users WHERE is_admin = 1");
-                            $row = $result->fetch_assoc();
-                            echo $row['total'];
-                            ?>
-                        </div>
-                        <div class="stat-label">Admin Users</div>
+                        <div class="stat-value">98.5%</div>
+                        <div class="stat-label">System Uptime</div>
                     </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                        <i class="fas fa-user-shield"></i>
+                    <div class="stat-icon green">
+                        <i class="fas fa-server"></i>
                     </div>
                 </div>
-                <div class="stat-trend">
-                    <i class="fas fa-shield-alt"></i> System protected
+                <div class="stat-trend up">
+                    <i class="fas fa-check-circle"></i>
+                    <span>All systems operational</span>
                 </div>
             </div>
 
-            <div class="stat-card" style="--card-color: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
-                <div class="stat-card-header">
+            <div class="stat-card">
+                <div class="stat-header">
                     <div>
                         <div class="stat-value">
                             <?php
@@ -934,111 +806,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         </div>
                         <div class="stat-label">Active Users</div>
                     </div>
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                    <div class="stat-icon orange">
                         <i class="fas fa-user-check"></i>
                     </div>
                 </div>
-                <div class="stat-trend">
-                    <i class="fas fa-arrow-up"></i> 8% increase
+                <div class="stat-trend up">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>8% increase</span>
                 </div>
             </div>
-        </div>
-
-        <div class="data-table">
-            <div class="table-header">
-                <div>
-                    <div class="table-title">Recent User Registrations</div>
-                    <div class="page-subtitle">Latest user activity and registrations</div>
-                </div>
-                <button class="btn btn-primary" onclick="window.location.href='user_management.php'">
-                    <i class="fas fa-users"></i>
-                    View All Users
-                </button>
-            </div>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>User</th>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    $result = $conn->query("SELECT * FROM users ORDER BY id DESC LIMIT 5");
-                    while ($row = $result->fetch_assoc()) {
-                        $status = isset($row['is_approved']) ? (int)$row['is_approved'] : 0;
-                        $statusClass = $status === 1 ? 'status-approved' : 'status-pending';
-                        $statusText = $status === 1 ? 'Approved' : 'Pending';
-                        
-                        echo "<tr>";
-                        echo "<td>
-                                <div style='display: flex; align-items: center; gap: 12px;'>
-                                    <img src='https://ui-avatars.com/api/?name=" . urlencode($row['fullname']) . "&background=667eea&color=fff&bold=true' style='width: 36px; height: 36px; border-radius: 10px;' />
-                                    <div style='font-weight: 600;'>" . htmlspecialchars($row['fullname']) . "</div>
-                                </div>
-                              </td>";
-                        echo "<td>" . htmlspecialchars($row['username']) . "</td>";
-                        echo "<td style='color: #718096;'>" . htmlspecialchars($row['email']) . "</td>";
-                        echo "<td><span class='status {$statusClass}'>{$statusText}</span></td>";
-                        echo "<td>
-                                <button class='action-btn'><i class='fas fa-edit'></i></button>
-                                <button class='action-btn delete'><i class='fas fa-trash'></i></button>
-                              </td>";
-                        echo "</tr>";
-                    }
-                    ?>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="data-table">
-            <div class="table-header">
-                <div>
-                    <div class="table-title">Security Control</div>
-                    <div class="page-subtitle">System security features and configurations</div>
-                </div>
-            </div>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>Security Feature</th>
-                        <th>Status</th>
-                        <th>Last Updated</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="font-weight: 600;">Two-Factor Authentication</td>
-                        <td><span class="status status-enabled">Enabled</span></td>
-                        <td style="color: #718096;">June 15, 2023</td>
-                        <td><button class="action-btn"><i class="fas fa-cog"></i></button></td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 600;">Password Policy</td>
-                        <td><span class="status status-enabled">Enabled</span></td>
-                        <td style="color: #718096;">June 10, 2023</td>
-                        <td><button class="action-btn"><i class="fas fa-cog"></i></button></td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 600;">Login Attempts Limit</td>
-                        <td><span class="status status-enabled">Enabled</span></td>
-                        <td style="color: #718096;">June 5, 2023</td>
-                        <td><button class="action-btn"><i class="fas fa-cog"></i></button></td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 600;">Session Timeout</td>
-                        <td><span class="status status-disabled">Disabled</span></td>
-                        <td style="color: #718096;">May 20, 2023</td>
-                        <td><button class="action-btn"><i class="fas fa-cog"></i></button></td>
-                    </tr>
-                </tbody>
-            </table>
         </div>
     </main>
 </body>

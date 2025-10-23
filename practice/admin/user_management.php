@@ -127,7 +127,7 @@ $admin_users = count(array_filter($users, function($u) { return isset($u['is_adm
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+            background: #f8fafc;
             color: #2d3748;
             line-height: 1.6;
         }
@@ -137,111 +137,296 @@ $admin_users = count(array_filter($users, function($u) { return isset($u['is_adm
             min-height: 100vh;
         }
         
+        /* ==================== SIDEBAR ==================== */
         .sidebar {
             width: 280px;
-            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 0;
-            position: fixed;
             height: 100vh;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            position: fixed;
+            left: 0;
+            top: 0;
             overflow-y: auto;
-            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
             z-index: 1000;
+            display: flex;
+            flex-direction: column;
         }
-        
-        .logo {
-            padding: 30px 25px;
-            margin-bottom: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+        .sidebar::-webkit-scrollbar {
+            width: 5px;
         }
-        
-        .logo-text {
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
+
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar-header {
+            padding: 32px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .brand {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
         }
-        
-        .logo-icon {
-            width: 42px;
-            height: 42px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
+
+        .brand-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-        }
-        
-        .logo-subtitle {
-            font-size: 12px;
-            opacity: 0.75;
-            margin-top: 5px;
-            font-weight: 500;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        
-        .nav-section {
-            padding: 15px 25px 10px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.6;
-        }
-        
-        .nav-item {
-            padding: 14px 25px;
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 2px 12px;
-            border-radius: 10px;
-            text-decoration: none;
-            color: rgba(255, 255, 255, 0.85);
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
             position: relative;
         }
-        
-        .nav-item:hover {
-            background-color: rgba(255, 255, 255, 0.15);
-            color: white;
-            transform: translateX(3px);
+
+        .brand-icon::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 18px;
+            z-index: -1;
+            opacity: 0.3;
+            filter: blur(8px);
         }
-        
-        .nav-item.active {
-            background-color: rgba(255, 255, 255, 0.2);
+
+        .brand-content h1 {
+            font-size: 22px;
+            font-weight: 800;
             color: white;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            letter-spacing: -0.5px;
+            margin-bottom: 2px;
         }
-        
-        .nav-item.active::before {
+
+        .brand-content p {
+            font-size: 11px;
+            color: #94a3b8;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .sidebar-nav {
+            padding: 24px 0;
+            flex: 1;
+        }
+
+        .nav-section-title {
+            padding: 0 24px 12px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-section-title::before {
+            content: '';
+            width: 4px;
+            height: 4px;
+            background: #3b82f6;
+            border-radius: 50%;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0 12px;
+            margin-bottom: 24px;
+        }
+
+        .nav-menu li {
+            margin-bottom: 4px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link::before {
             content: '';
             position: absolute;
             left: 0;
-            top: 50%;
-            transform: translateY(-50%);
+            top: 0;
             width: 4px;
-            height: 24px;
-            background: white;
-            border-radius: 0 4px 4px 0;
+            height: 100%;
+            background: linear-gradient(180deg, #3b82f6 0%, #8b5cf6 100%);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
         }
-        
-        .nav-item i {
-            margin-right: 12px;
-            width: 20px;
+
+        .nav-link:hover {
+            background: rgba(59, 130, 246, 0.08);
+            color: white;
+            transform: translateX(4px);
+        }
+
+        .nav-link:hover::before {
+            transform: scaleY(1);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .nav-link.active::before {
+            transform: scaleY(1);
+        }
+
+        .nav-link.active .nav-icon {
+            color: #3b82f6;
+        }
+
+        .nav-icon {
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 14px;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-text {
+            flex: 1;
+        }
+
+        .nav-badge {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            padding: 3px 9px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            min-width: 22px;
             text-align: center;
+        }
+
+        .nav-arrow {
+            font-size: 12px;
+            margin-left: auto;
+            transition: transform 0.3s ease;
+            opacity: 0;
+        }
+
+        .nav-link:hover .nav-arrow {
+            opacity: 1;
+        }
+
+        .nav-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.06);
+            margin: 20px 24px;
+        }
+
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .user-profile:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .user-avatar-sidebar {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: 2px solid rgba(59, 130, 246, 0.4);
+            object-fit: cover;
+        }
+
+        .user-info-sidebar {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name-sidebar {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+        }
+
+        .user-role {
+            font-size: 11px;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .user-menu-icon {
+            color: #64748b;
             font-size: 16px;
         }
         
-        .nav-item span {
-            font-size: 14px;
-            font-weight: 500;
-        }
-        
+        /* ==================== MAIN CONTENT ==================== */
         .main-content {
             flex: 1;
             margin-left: 280px;
@@ -306,7 +491,7 @@ $admin_users = count(array_filter($users, function($u) { return isset($u['is_adm
         }
         
         .admin-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
             color: white;
             padding: 4px 10px;
             border-radius: 6px;
@@ -460,8 +645,8 @@ $admin_users = count(array_filter($users, function($u) { return isset($u['is_adm
         
         .search-box:focus-within {
             background-color: white;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
         
         .search-box i {
@@ -603,7 +788,7 @@ $admin_users = count(array_filter($users, function($u) { return isset($u['is_adm
         
         .action-btn:hover {
             background-color: #f0f4f8;
-            color: #667eea;
+            color: #3b82f6;
         }
         
         .action-btn.delete:hover {
@@ -753,29 +938,57 @@ $admin_users = count(array_filter($users, function($u) { return isset($u['is_adm
             .sidebar {
                 width: 70px;
             }
+
+            .brand-content,
+            .nav-section-title,
+            .nav-text,
+            .nav-badge,
+            .nav-arrow,
+            .user-info-sidebar {
+                display: none;
+            }
+
+            .sidebar-header {
+                padding: 24px 10px;
+            }
+
+            .brand {
+                justify-content: center;
+            }
+
+            .nav-menu {
+                padding: 0 8px;
+            }
+
+            .nav-link {
+                justify-content: center;
+                padding: 14px;
+            }
+
+            .nav-icon {
+                margin-right: 0;
+            }
+
+            .nav-link::before {
+                display: none;
+            }
+
+            .sidebar-footer {
+                padding: 16px 10px;
+            }
+
+            .user-profile {
+                justify-content: center;
+                padding: 12px;
+            }
+
+            .user-menu-icon {
+                display: none;
+            }
             
             .main-content {
                 margin-left: 70px;
                 padding: 20px;
-            }
-            
-            .logo-text, .logo-subtitle, .nav-item span, .nav-section {
-                display: none;
-            }
-            
-            .logo {
-                padding: 20px 0;
-                text-align: center;
-            }
-            
-            .nav-item {
-                justify-content: center;
-                padding: 15px 0;
-                margin: 2px 8px;
-            }
-            
-            .nav-item i {
-                margin-right: 0;
             }
             
             .stats-grid {
@@ -810,43 +1023,123 @@ $admin_users = count(array_filter($users, function($u) { return isset($u['is_adm
 </head>
 <body>
     <div class="admin-container">
-        <div class="sidebar">
-            <div class="logo">
-                <div class="logo-text">
-                    <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
-                    <div>
-                        FinTrack
-                        <div class="logo-subtitle">Admin Panel</div>
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <div class="brand-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="brand-content">
+                        <h1>FinTrack</h1>
+                        <p>Admin Panel</p>
                     </div>
                 </div>
             </div>
-            
-            <div class="nav-section">Main Menu</div>
-            <a href="dashboard.php" class="nav-item">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="user_management.php" class="nav-item active">
-                <i class="fas fa-users"></i>
-                <span>User Management</span>
-            </a>
-            <a href="security_control.php" class="nav-item">
-                <i class="fas fa-shield-alt"></i>
-                <span>Security Control</span>
-            </a>
-            <a href="user_approval.php" class="nav-item">
-                <i class="fas fa-check-circle"></i>
-                <span>User Approval</span>
-            </a>
-            <a href="account_ownership.php" class="nav-item">
-                <i class="fas fa-user-tag"></i>
-                <span>Account Ownership</span>
-            </a>
-            <a href="../logout.php" class="nav-item">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Logout</span>
-            </a>
-        </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-title">Overview</div>
+                <ul class="nav-menu">
+                    <li>
+                        <a href="dashboard.php" class="nav-link">
+                            <span class="nav-icon"><i class="fas fa-home"></i></span>
+                            <span class="nav-text">Dashboard</span>
+                            <i class="fas fa-chevron-right nav-arrow"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link">
+                            <span class="nav-icon"><i class="fas fa-chart-bar"></i></span>
+                            <span class="nav-text">Analytics</span>
+                            <i class="fas fa-chevron-right nav-arrow"></i>
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="nav-section-title">Management</div>
+                <ul class="nav-menu">
+                    <li>
+                        <a href="user_management.php" class="nav-link active">
+                            <span class="nav-icon"><i class="fas fa-users"></i></span>
+                            <span class="nav-text">User Management</span>
+                            <i class="fas fa-chevron-right nav-arrow"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="user_approval.php" class="nav-link">
+                            <span class="nav-icon"><i class="fas fa-user-check"></i></span>
+                            <span class="nav-text">User Approval</span>
+                            <?php
+                            $pending_result = $conn->query("SELECT COUNT(*) as total FROM users WHERE is_approved = 0 OR is_approved IS NULL");
+                            $pending_count = $pending_result->fetch_assoc()['total'];
+                            if ($pending_count > 0) {
+                                echo '<span class="nav-badge">' . $pending_count . '</span>';
+                            }
+                            ?>
+                            <i class="fas fa-chevron-right nav-arrow"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="account_ownership.php" class="nav-link">
+                            <span class="nav-icon"><i class="fas fa-exchange-alt"></i></span>
+                            <span class="nav-text">Account Ownership</span>
+                            <i class="fas fa-chevron-right nav-arrow"></i>
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="nav-section-title">Security</div>
+                <ul class="nav-menu">
+                    <li>
+                        <a href="security_control.php" class="nav-link">
+                            <span class="nav-icon"><i class="fas fa-shield-halved"></i></span>
+                            <span class="nav-text">Security Control</span>
+                            <i class="fas fa-chevron-right nav-arrow"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link">
+                            <span class="nav-icon"><i class="fas fa-key"></i></span>
+                            <span class="nav-text">API Keys</span>
+                            <i class="fas fa-chevron-right nav-arrow"></i>
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="nav-divider"></div>
+
+                <ul class="nav-menu">
+                    <li>
+                        <a href="#" class="nav-link">
+                            <span class="nav-icon"><i class="fas fa-cog"></i></span>
+                            <span class="nav-text">Settings</span>
+                            <i class="fas fa-chevron-right nav-arrow"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../logout.php" class="nav-link">
+                            <span class="nav-icon"><i class="fas fa-sign-out-alt"></i></span>
+                            <span class="nav-text">Logout</span>
+                            <i class="fas fa-chevron-right nav-arrow"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($fullname); ?>&background=3b82f6&color=fff&bold=true" alt="Avatar" class="user-avatar-sidebar">
+                    <div class="user-info-sidebar">
+                        <div class="user-name-sidebar"><?php echo htmlspecialchars($fullname); ?></div>
+                        <div class="user-role">
+                            <span class="status-dot"></span>
+                            Administrator
+                        </div>
+                    </div>
+                    <i class="fas fa-ellipsis-v user-menu-icon"></i>
+                </div>
+            </div>
+        </aside>
         
         <div class="main-content">
             <div class="header">
@@ -855,7 +1148,7 @@ $admin_users = count(array_filter($users, function($u) { return isset($u['is_adm
                     <div class="page-subtitle">Manage all users, permissions, and access control</div>
                 </div>
                 <div class="user-info">
-                    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($fullname); ?>&background=667eea&color=fff&bold=true" alt="User Avatar" class="user-avatar">
+                    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($fullname); ?>&background=3b82f6&color=fff&bold=true" alt="User Avatar" class="user-avatar">
                     <div class="user-details">
                         <div class="user-name">
                             <?php echo htmlspecialchars($fullname); ?>

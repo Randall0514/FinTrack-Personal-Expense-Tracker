@@ -57,17 +57,14 @@ if ($tableCheck->num_rows == 0) {
         require_special_chars BOOLEAN DEFAULT TRUE,
         require_numbers BOOLEAN DEFAULT TRUE,
         require_uppercase BOOLEAN DEFAULT TRUE,
-        max_login_attempts INT DEFAULT 5,
-        lockout_time_minutes INT DEFAULT 30,
-        session_timeout_minutes INT DEFAULT 60,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )";
     
     if ($conn->query($createTable)) {
         $conn->query("INSERT INTO security_settings 
-            (password_min_length, require_special_chars, require_numbers, require_uppercase, max_login_attempts, lockout_time_minutes, session_timeout_minutes) 
-            VALUES (8, 1, 1, 1, 5, 30, 60)");
+            (password_min_length, require_special_chars, require_numbers, require_uppercase) 
+            VALUES (8, 1, 1, 1)");
     }
 }
 
@@ -77,8 +74,8 @@ if ($result && $result->num_rows > 0) {
     $settings = $result->fetch_assoc();
 } else {
     $conn->query("INSERT INTO security_settings 
-        (password_min_length, require_special_chars, require_numbers, require_uppercase, max_login_attempts, lockout_time_minutes, session_timeout_minutes) 
-        VALUES (8, 1, 1, 1, 5, 30, 60)");
+        (password_min_length, require_special_chars, require_numbers, require_uppercase) 
+        VALUES (8, 1, 1, 1)");
     
     $result = $conn->query("SELECT * FROM security_settings LIMIT 1");
     if ($result) {
@@ -92,27 +89,18 @@ if (isset($_POST['update_settings'])) {
     $require_special_chars = isset($_POST['require_special_chars']) ? 1 : 0;
     $require_numbers = isset($_POST['require_numbers']) ? 1 : 0;
     $require_uppercase = isset($_POST['require_uppercase']) ? 1 : 0;
-    $max_login_attempts = $_POST['max_login_attempts'];
-    $lockout_time_minutes = $_POST['lockout_time_minutes'];
-    $session_timeout_minutes = $_POST['session_timeout_minutes'];
     
     $stmt = $conn->prepare("UPDATE security_settings SET 
         password_min_length = ?, 
         require_special_chars = ?, 
         require_numbers = ?, 
-        require_uppercase = ?, 
-        max_login_attempts = ?, 
-        lockout_time_minutes = ?, 
-        session_timeout_minutes = ?");
+        require_uppercase = ?");
     
-    $stmt->bind_param("iiiiiii", 
+    $stmt->bind_param("iiii", 
         $password_min_length, 
         $require_special_chars, 
         $require_numbers, 
-        $require_uppercase, 
-        $max_login_attempts, 
-        $lockout_time_minutes, 
-        $session_timeout_minutes
+        $require_uppercase
     );
     
     if ($stmt->execute()) {
@@ -259,32 +247,11 @@ if ($result) {
 $result = $conn->query("SELECT COUNT(*) as total FROM users");
 $total_users = $result ? $result->fetch_assoc()['total'] : 0;
 
-// ✅ REMOVED: The automatic test data insertion code has been completely removed
-// Login attempts will now only show real authentication data
-
 $result = $conn->query("SELECT COUNT(*) as total FROM login_attempts WHERE success = 0 AND attempt_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)");
 $failed_attempts = $result ? $result->fetch_assoc()['total'] : 0;
 
 $result = $conn->query("SELECT COUNT(*) as total FROM login_attempts WHERE success = 1 AND attempt_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)");
 $successful_logins = $result ? $result->fetch_assoc()['total'] : 0;
-
-// Check if sessions table exists
-$tableCheck = $conn->query("SHOW TABLES LIKE 'sessions'");
-if ($tableCheck->num_rows == 0) {
-    $createTable = "CREATE TABLE sessions (
-        id VARCHAR(255) PRIMARY KEY,
-        user_id INT NOT NULL,
-        ip_address VARCHAR(45) NOT NULL,
-        user_agent TEXT,
-        last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_last_activity (last_activity)
-    )";
-    $conn->query($createTable);
-}
-
-// Get active sessions
-$result = $conn->query("SELECT COUNT(*) as total FROM sessions WHERE last_activity > DATE_SUB(NOW(), INTERVAL 1 HOUR)");
-$active_sessions = $result && $result->num_rows > 0 ? $result->fetch_assoc()['total'] : 0;
 
 // Helper function to get sort icon
 function getSortIcon($column, $current_sort, $current_order) {
@@ -987,7 +954,7 @@ function toggleOrder($current_order) {
     .empty-state-text {
         font-size: 16px;
         font-weight: 500;
-    }
+        }
 
     /* Modal */
     .modal {
@@ -1244,45 +1211,16 @@ function toggleOrder($current_order) {
                         <i class="fas fa-user-check"></i> Active users
                     </div>
                 </div>
-                
-                <div class="stat-card" style="--card-color: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                    <div class="stat-card-header">
-                        <div>
-                            <div class="stat-value"><?php echo $active_sessions; ?></div>
-                            <div class="stat-label">Active Sessions (1h)</div>
-                        </div>
-                        <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                    </div>
-                    <div class="stat-trend">
-                        <i class="fas fa-chart-line"></i> Real-time data
-                    </div>
-                </div>
             </div>
             <div class="data-card">
                 <div class="card-header">
-                    <div><div class="card-title">Security Settings</div><div class="page-subtitle">Configure password policies and authentication rules</div></div>
+                    <div><div class="card-title">Password Security Settings</div><div class="page-subtitle">Configure password policies and requirements</div></div>
                 </div>
                 <form method="POST">
                     <div class="form-row">
                         <div class="form-group">
                             <label for="password_min_length"><i class="fas fa-key"></i> Minimum Password Length</label>
                             <input type="number" id="password_min_length" name="password_min_length" class="form-control" value="<?php echo isset($settings['password_min_length']) ? $settings['password_min_length'] : 8; ?>" min="6" max="20">
-                        </div>
-                        <div class="form-group">
-                            <label for="max_login_attempts"><i class="fas fa-lock"></i> Max Login Attempts Before Lockout</label>
-                            <input type="number" id="max_login_attempts" name="max_login_attempts" class="form-control" value="<?php echo isset($settings['max_login_attempts']) ? $settings['max_login_attempts'] : 5; ?>" min="1" max="10">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="lockout_time_minutes"><i class="fas fa-user-lock"></i> Account Lockout Duration (minutes)</label>
-                            <input type="number" id="lockout_time_minutes" name="lockout_time_minutes" class="form-control" value="<?php echo isset($settings['lockout_time_minutes']) ? $settings['lockout_time_minutes'] : 30; ?>" min="5" max="1440">
-                        </div>
-                        <div class="form-group">
-                            <label for="session_timeout_minutes"><i class="fas fa-hourglass-half"></i> Session Timeout (minutes)</label>
-                            <input type="number" id="session_timeout_minutes" name="session_timeout_minutes" class="form-control" value="<?php echo isset($settings['session_timeout_minutes']) ? $settings['session_timeout_minutes'] : 60; ?>" min="5" max="1440">
                         </div>
                     </div>
                     <div class="checkbox-group">
