@@ -60,12 +60,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 .pc-sidebar {
   background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%) !important;
   box-shadow: 2px 0 20px rgba(0, 0, 0, 0.08) !important;
-  /* HEIGHT OPTIONS - Choose one: */
-  height: 100vh;        /* Full viewport height (default) */
-  /* height: 100%;      /* Full parent container height */
-  /* height: 90vh;      /* 90% of viewport height */
-  /* height: 800px;     /* Fixed pixel height */
-  /* max-height: 100vh; /* Maximum height with flexibility */
+  height: 100vh;
   position: fixed;
   overflow: hidden;
   display: flex;
@@ -252,14 +247,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
   letter-spacing: 0.5px;
 }
 
-/* Navigation Section - KEY FIX: Made scrollable */
+/* Navigation Section */
 .nav-section {
   flex: 1;
   padding: 0.75rem;
   overflow-y: auto;
   overflow-x: hidden;
   margin-top: 0;
-  min-height: 0; /* Important for flex children */
+  min-height: 0;
 }
 
 .nav-section::-webkit-scrollbar {
@@ -393,36 +388,198 @@ $current_page = basename($_SERVER['PHP_SELF']);
   box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
 }
 
+/* About Modal Styles */
+.about-modal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  position: relative;
+  background: white;
+  margin: 1% auto;
+  padding: 0;
+  border-radius: 16px;
+  width: 85%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideDown 0.4s ease;
+  overflow: hidden;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1.5rem;
+  text-align: center;
+  position: relative;
+}
+
+.modal-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="rgba(255,255,255,0.1)"/></svg>');
+  opacity: 0.1;
+}
+
+.modal-logo {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 0.75rem;
+  background: white;
+  border-radius: 15px;
+  padding: 0.75rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 1;
+}
+
+.modal-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.modal-title {
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 0 0.25rem 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 1;
+}
+
+.modal-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.8rem;
+  margin: 0;
+  font-weight: 500;
+  position: relative;
+  z-index: 1;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.info-section {
+  margin-bottom: 1.5rem;
+}
+
+.info-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #667eea;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+}
+
+.info-value {
+  color: #1f2937;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.75rem;
+  background: #f3f4f6;
+  border-radius: 10px;
+  border-left: 4px solid #667eea;
+}
+
+.modal-footer {
+  background: #f9fafb;
+  padding: 1.5rem 2rem;
+  text-align: center;
+  border-top: 1px solid #e5e7eb;
+}
+
+.copyright-text {
+  color: #6b7280;
+  font-size: 0.85rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+.close-modal-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.close-modal-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .pc-sidebar {
     width: 260px;
   }
   
-  .sidebar-brand {
-    padding: 1rem;
+  .modal-content {
+    width: 95%;
+    margin: 10% auto;
   }
   
-  .logo-image {
-    width: 2.5rem;
-    height: 2.5rem;
+  .modal-header {
+    padding: 1.5rem;
   }
   
-  .logo-text h1 {
-    font-size: 1.2rem;
+  .modal-logo {
+    width: 60px;
+    height: 60px;
   }
   
-  .user-name {
-    font-size: 0.85rem;
+  .modal-title {
+    font-size: 1.5rem;
   }
   
-  .user-email {
-    font-size: 0.65rem;
-  }
-  
-  .user-avatar {
-    width: 2.5rem;
-    height: 2.5rem;
+  .modal-body {
+    padding: 1.5rem;
   }
 }
 </style>
@@ -447,7 +604,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <img src="<?php echo htmlspecialchars($userData['profile_picture']); ?>" alt="Profile" class="user-avatar" />
             <div class="user-info">
               <p class="user-name"><?php echo htmlspecialchars($userData['fullname']); ?></p>
-                <div class="user-status">
+              <div class="user-status">
                 <span class="status-indicator"></span>
                 <span class="status-text">Online</span>
               </div>
@@ -501,7 +658,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </li>
 
         <li>
-          <a href="#!" onclick="return alert('About this System\n\nSystem Name: FinTrack\nDeveloper: (Student Name)\nContact No: (Contact No.)\nEmail: (Email)\n\n© 2025 Software Solutions. All rights reserved.');" class="menu-item">
+          <a href="#!" onclick="openAboutModal(); return false;" class="menu-item">
             <i data-feather="info" width="20"></i>
             <span>About</span>
           </a>
@@ -518,3 +675,85 @@ $current_page = basename($_SERVER['PHP_SELF']);
   </div>
 </nav>
 <!-- [ Sidebar Menu ] end -->
+
+<!-- About Modal -->
+<div id="aboutModal" class="about-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <button class="close-modal-btn" onclick="closeAboutModal()">&times;</button>
+      <div class="modal-logo">
+        <img src="../assets/images/Logo.png" alt="FinTrack Logo" />
+      </div>
+      <h2 class="modal-title">FinTrack</h2>
+      <p class="modal-subtitle">Expense Tracker System</p>
+    </div>
+    
+    <div class="modal-body">
+      <div class="info-section">
+        <div class="info-label">
+          <i data-feather="users" width="16"></i>
+          Group Members
+        </div>
+        <div class="info-value">
+          Wrench Joseph Colorada<br>
+          Cliven James Macaranas<br>
+          Danilo Orozco<br>
+          Daphnie Roanne Salinas<br>
+          Randall Benedict Salvador
+        </div>
+      </div>
+      
+      <div class="info-section">
+        <div class="info-label">
+          <i data-feather="phone" width="16"></i>
+          Contact Number
+        </div>
+        <div class="info-value">(Contact No.)</div>
+      </div>
+      
+      <div class="info-section">
+        <div class="info-label">
+          <i data-feather="mail" width="16"></i>
+          Email Address
+        </div>
+        <div class="info-value">wrta.colorada.up@phinmaed.com</div>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <p class="copyright-text">© 2025 Software Solutions. All rights reserved.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// Modal Functions
+function openAboutModal() {
+  document.getElementById('aboutModal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  // Re-initialize feather icons for modal content
+  if (typeof feather !== 'undefined') {
+    feather.replace();
+  }
+}
+
+function closeAboutModal() {
+  document.getElementById('aboutModal').style.display = 'none';
+  document.body.style.overflow = 'auto';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  const modal = document.getElementById('aboutModal');
+  if (event.target == modal) {
+    closeAboutModal();
+  }
+}
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    closeAboutModal();
+  }
+});
+</script>

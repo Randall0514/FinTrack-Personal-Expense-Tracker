@@ -4,12 +4,9 @@ require '../vendor/autoload.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-// ✅ FIXED: Check for admin token first
 $secret_key = "your_secret_key_here_change_this_in_production";
 
-// Check if admin token exists
 if (!isset($_COOKIE['admin_jwt_token'])) {
-    // Check if regular user token exists and redirect accordingly
     if (isset($_COOKIE['jwt_token'])) {
         header("Location: ../dist/admin/dashboard.php");
         exit;
@@ -18,14 +15,11 @@ if (!isset($_COOKIE['admin_jwt_token'])) {
     exit;
 }
 
-// Verify admin token
 $jwt = $_COOKIE['admin_jwt_token'];
 try {
     $decoded = JWT::decode($jwt, new Key($secret_key, 'HS256'));
     
-    // Check if user is admin
     if (!isset($decoded->data->is_admin) || $decoded->data->is_admin !== true) {
-        // Not an admin, clear cookie and redirect
         setcookie("admin_jwt_token", "", time() - 3600, "/", "", false, true);
         header("Location: ../dist/admin/dashboard.php");
         exit;
@@ -35,19 +29,17 @@ try {
     $fullname = $decoded->data->fullname;
     $email = $decoded->data->email;
 } catch (Exception $e) {
-    // Invalid token
     setcookie("admin_jwt_token", "", time() - 3600, "/", "", false, true);
     header("Location: ../login.php");
     exit;
 }
 
-// Connect to database
 require_once '../config/dbconfig_password.php';
 
-// Process approval actions
 $message = '';
+$message_type = '';
 
-// Approve user
+// Approve single user
 if (isset($_POST['approve_user'])) {
     $target_user_id = $_POST['user_id'];
     
@@ -56,8 +48,10 @@ if (isset($_POST['approve_user'])) {
     
     if ($stmt->execute()) {
         $message = "User approved successfully!";
+        $message_type = "success";
     } else {
         $message = "Error approving user: " . $conn->error;
+        $message_type = "error";
     }
 }
 
@@ -70,8 +64,10 @@ if (isset($_POST['reject_user'])) {
     
     if ($stmt->execute()) {
         $message = "User approval rejected!";
+        $message_type = "success";
     } else {
         $message = "Error rejecting user: " . $conn->error;
+        $message_type = "error";
     }
 }
 
@@ -81,8 +77,10 @@ if (isset($_POST['approve_all'])) {
     
     if ($stmt->execute()) {
         $message = "All pending users approved successfully!";
+        $message_type = "success";
     } else {
         $message = "Error approving all users: " . $conn->error;
+        $message_type = "error";
     }
 }
 
@@ -90,7 +88,7 @@ if (isset($_POST['approve_all'])) {
 $result = $conn->query("SELECT * FROM users WHERE is_approved = 0 OR is_approved IS NULL ORDER BY id DESC");
 $pending_users = $result->fetch_all(MYSQLI_ASSOC);
 
-// Get recently approved users
+// Get approved users
 $result = $conn->query("SELECT * FROM users WHERE is_approved = 1 ORDER BY id DESC LIMIT 10");
 $approved_users = $result->fetch_all(MYSQLI_ASSOC);
 ?>
@@ -123,24 +121,41 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
             min-height: 100vh;
         }
         
+        /* Sidebar */
         .sidebar {
             width: 280px;
             background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 0;
             position: fixed;
             height: 100vh;
             overflow-y: auto;
             box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
             z-index: 1000;
         }
-        
+
+        .sidebar::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
         .logo {
             padding: 30px 25px;
             margin-bottom: 20px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
-        
+
         .logo-text {
             font-size: 28px;
             font-weight: 800;
@@ -149,7 +164,7 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
             align-items: center;
             gap: 12px;
         }
-        
+
         .logo-icon {
             width: 42px;
             height: 42px;
@@ -160,7 +175,7 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
             justify-content: center;
             font-size: 20px;
         }
-        
+
         .logo-subtitle {
             font-size: 12px;
             opacity: 0.75;
@@ -169,7 +184,7 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
             letter-spacing: 1px;
             text-transform: uppercase;
         }
-        
+
         .nav-section {
             padding: 15px 25px 10px;
             font-size: 11px;
@@ -178,7 +193,7 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
             letter-spacing: 1px;
             opacity: 0.6;
         }
-        
+
         .nav-item {
             padding: 14px 25px;
             display: flex;
@@ -191,19 +206,19 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
             color: rgba(255, 255, 255, 0.85);
             position: relative;
         }
-        
+
         .nav-item:hover {
             background-color: rgba(255, 255, 255, 0.15);
             color: white;
             transform: translateX(3px);
         }
-        
+
         .nav-item.active {
             background-color: rgba(255, 255, 255, 0.2);
             color: white;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
-        
+
         .nav-item.active::before {
             content: '';
             position: absolute;
@@ -215,14 +230,14 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
             background: white;
             border-radius: 0 4px 4px 0;
         }
-        
+
         .nav-item i {
             margin-right: 12px;
             width: 20px;
             text-align: center;
             font-size: 16px;
         }
-        
+
         .nav-item span {
             font-size: 14px;
             font-weight: 500;
@@ -311,6 +326,7 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
             gap: 12px;
             font-weight: 500;
             animation: slideIn 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
         
         @keyframes slideIn {
@@ -327,21 +343,17 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
         .alert-success {
             background-color: #c6f6d5;
             color: #22543d;
-            border: 1px solid #9ae6b4;
+            border-left: 4px solid #38a169;
         }
         
-        .alert-success i {
-            color: #38a169;
-        }
-        
-        .alert-danger {
+        .alert-error {
             background-color: #fed7d7;
             color: #742a2a;
-            border: 1px solid #fc8181;
+            border-left: 4px solid #e53e3e;
         }
         
-        .alert-danger i {
-            color: #e53e3e;
+        .alert i {
+            font-size: 20px;
         }
         
         .data-card {
@@ -460,10 +472,6 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
             border: 2px solid #e2e8f0;
         }
         
-        .user-details {
-            flex: 1;
-        }
-        
         .user-fullname {
             font-weight: 600;
             font-size: 16px;
@@ -492,6 +500,7 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
         .user-actions {
             display: flex;
             gap: 10px;
+            margin-left: auto;
         }
         
         .user-actions form {
@@ -533,29 +542,32 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
             .sidebar {
                 width: 70px;
             }
-            
-            .main-content {
-                margin-left: 70px;
-                padding: 20px;
-            }
-            
-            .logo-text, .logo-subtitle, .nav-item span, .nav-section {
+
+            .logo-text,
+            .logo-subtitle,
+            .nav-item span,
+            .nav-section {
                 display: none;
             }
-            
+
             .logo {
                 padding: 20px 0;
                 text-align: center;
             }
-            
+
             .nav-item {
                 justify-content: center;
                 padding: 15px 0;
                 margin: 2px 8px;
             }
-            
+
             .nav-item i {
                 margin-right: 0;
+            }
+            
+            .main-content {
+                margin-left: 70px;
+                padding: 20px;
             }
             
             .header {
@@ -573,12 +585,16 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
             .user-avatar-card {
                 margin-right: 0;
             }
+
+            .user-actions {
+                margin-left: 0;
+            }
         }
     </style>
 </head>
 <body>
     <div class="admin-container">
-        <div class="sidebar">
+        <aside class="sidebar">
             <div class="logo">
                 <div class="logo-text">
                     <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
@@ -588,7 +604,7 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
                     </div>
                 </div>
             </div>
-            
+
             <div class="nav-section">Main Menu</div>
             <a href="dashboard.php" class="nav-item">
                 <i class="fas fa-tachometer-alt"></i>
@@ -614,7 +630,7 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
             </a>
-        </div>
+        </aside>
         
         <div class="main-content">
             <div class="header">
@@ -635,9 +651,9 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
             </div>
             
             <?php if (!empty($message)): ?>
-                <div class="alert <?php echo strpos($message, 'Error') !== false ? 'alert-danger' : 'alert-success'; ?>">
-                    <i class="fas <?php echo strpos($message, 'Error') !== false ? 'fa-exclamation-circle' : 'fa-check-circle'; ?>"></i>
-                    <?php echo $message; ?>
+                <div class="alert alert-<?php echo $message_type; ?>">
+                    <i class="fas fa-<?php echo $message_type === 'success' ? 'check-circle' : 'exclamation-circle'; ?>"></i>
+                    <span><?php echo $message; ?></span>
                 </div>
             <?php endif; ?>
             

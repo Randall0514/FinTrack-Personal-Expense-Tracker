@@ -4,12 +4,9 @@ require '../vendor/autoload.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-// ✅ FIXED: Check for admin token first
 $secret_key = "your_secret_key_here_change_this_in_production";
 
-// Check if admin token exists
 if (!isset($_COOKIE['admin_jwt_token'])) {
-    // Check if regular user token exists and redirect accordingly
     if (isset($_COOKIE['jwt_token'])) {
         header("Location: ../dist/admin/dashboard.php");
         exit;
@@ -18,14 +15,11 @@ if (!isset($_COOKIE['admin_jwt_token'])) {
     exit;
 }
 
-// Verify admin token
 $jwt = $_COOKIE['admin_jwt_token'];
 try {
     $decoded = JWT::decode($jwt, new Key($secret_key, 'HS256'));
     
-    // Check if user is admin
     if (!isset($decoded->data->is_admin) || $decoded->data->is_admin !== true) {
-        // Not an admin, clear cookie and redirect
         setcookie("admin_jwt_token", "", time() - 3600, "/", "", false, true);
         header("Location: ../dist/admin/dashboard.php");
         exit;
@@ -35,83 +29,68 @@ try {
     $fullname = $decoded->data->fullname;
     $email = $decoded->data->email;
 } catch (Exception $e) {
-    // Invalid token
     setcookie("admin_jwt_token", "", time() - 3600, "/", "", false, true);
     header("Location: ../login.php");
     exit;
 }
 
-// Connect to database
 require_once '../config/dbconfig_password.php';
 
-// Helper function to check if table exists
 function tableExists($conn, $tableName) {
     $result = $conn->query("SHOW TABLES LIKE '$tableName'");
     return $result && $result->num_rows > 0;
 }
 
-// Check which tables exist
 $hasExpenses = tableExists($conn, 'expenses');
 $hasIncome = tableExists($conn, 'income');
 $hasBudgets = tableExists($conn, 'budgets');
 
-// Process ownership actions
 $message = '';
 $messageType = '';
 
-// Transfer ownership
 if (isset($_POST['transfer_ownership'])) {
     $from_user_id = $_POST['from_user_id'];
     $to_user_id = $_POST['to_user_id'];
     
-    // Start transaction
     $conn->begin_transaction();
     
     try {
-        // Transfer expenses if table exists
         if ($hasExpenses) {
             $stmt = $conn->prepare("UPDATE expenses SET user_id = ? WHERE user_id = ?");
             $stmt->bind_param("ii", $to_user_id, $from_user_id);
             $stmt->execute();
         }
         
-        // Transfer income if table exists
         if ($hasIncome) {
             $stmt = $conn->prepare("UPDATE income SET user_id = ? WHERE user_id = ?");
             $stmt->bind_param("ii", $to_user_id, $from_user_id);
             $stmt->execute();
         }
         
-        // Transfer budgets if table exists
         if ($hasBudgets) {
             $stmt = $conn->prepare("UPDATE budgets SET user_id = ? WHERE user_id = ?");
             $stmt->bind_param("ii", $to_user_id, $from_user_id);
             $stmt->execute();
         }
         
-        // Commit transaction
         $conn->commit();
         
         $message = "Account data transferred successfully!";
         $messageType = "success";
     } catch (Exception $e) {
-        // Rollback transaction on error
         $conn->rollback();
         $message = "Error transferring account data: " . $e->getMessage();
         $messageType = "error";
     }
 }
 
-// Get all users
 $result = $conn->query("SELECT * FROM users ORDER BY fullname ASC");
 $users = $result->fetch_all(MYSQLI_ASSOC);
 
-// Get user statistics
 $user_stats = [];
 foreach ($users as $user) {
     $user_id = $user['id'];
     
-    // Initialize stats
     $user_stats[$user_id] = [
         'expenses_count' => 0,
         'expenses_total' => 0,
@@ -120,7 +99,6 @@ foreach ($users as $user) {
         'budgets_count' => 0
     ];
     
-    // Count expenses if table exists
     if ($hasExpenses) {
         $stmt = $conn->prepare("SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as total FROM expenses WHERE user_id = ?");
         $stmt->bind_param("i", $user_id);
@@ -131,7 +109,6 @@ foreach ($users as $user) {
         $user_stats[$user_id]['expenses_total'] = $expense_data['total'] ?? 0;
     }
     
-    // Count incomes if table exists
     if ($hasIncome) {
         $stmt = $conn->prepare("SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as total FROM income WHERE user_id = ?");
         $stmt->bind_param("i", $user_id);
@@ -142,7 +119,6 @@ foreach ($users as $user) {
         $user_stats[$user_id]['income_total'] = $income_data['total'] ?? 0;
     }
     
-    // Count budgets if table exists
     if ($hasBudgets) {
         $stmt = $conn->prepare("SELECT COUNT(*) as count FROM budgets WHERE user_id = ?");
         $stmt->bind_param("i", $user_id);
@@ -182,24 +158,41 @@ foreach ($users as $user) {
             min-height: 100vh;
         }
         
+        /* Sidebar */
         .sidebar {
             width: 280px;
             background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 0;
             position: fixed;
             height: 100vh;
             overflow-y: auto;
             box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
             z-index: 1000;
         }
-        
+
+        .sidebar::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
         .logo {
             padding: 30px 25px;
             margin-bottom: 20px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
-        
+
         .logo-text {
             font-size: 28px;
             font-weight: 800;
@@ -208,7 +201,7 @@ foreach ($users as $user) {
             align-items: center;
             gap: 12px;
         }
-        
+
         .logo-icon {
             width: 42px;
             height: 42px;
@@ -219,7 +212,7 @@ foreach ($users as $user) {
             justify-content: center;
             font-size: 20px;
         }
-        
+
         .logo-subtitle {
             font-size: 12px;
             opacity: 0.75;
@@ -228,7 +221,7 @@ foreach ($users as $user) {
             letter-spacing: 1px;
             text-transform: uppercase;
         }
-        
+
         .nav-section {
             padding: 15px 25px 10px;
             font-size: 11px;
@@ -237,7 +230,7 @@ foreach ($users as $user) {
             letter-spacing: 1px;
             opacity: 0.6;
         }
-        
+
         .nav-item {
             padding: 14px 25px;
             display: flex;
@@ -250,19 +243,19 @@ foreach ($users as $user) {
             color: rgba(255, 255, 255, 0.85);
             position: relative;
         }
-        
+
         .nav-item:hover {
             background-color: rgba(255, 255, 255, 0.15);
             color: white;
             transform: translateX(3px);
         }
-        
+
         .nav-item.active {
             background-color: rgba(255, 255, 255, 0.2);
             color: white;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
-        
+
         .nav-item.active::before {
             content: '';
             position: absolute;
@@ -274,14 +267,14 @@ foreach ($users as $user) {
             background: white;
             border-radius: 0 4px 4px 0;
         }
-        
+
         .nav-item i {
             margin-right: 12px;
             width: 20px;
             text-align: center;
             font-size: 16px;
         }
-        
+
         .nav-item span {
             font-size: 14px;
             font-weight: 500;
@@ -488,7 +481,7 @@ foreach ($users as $user) {
         
         .btn-secondary {
             background: #e2e8f0;
-            color: #4a5568;
+            color: #2d3748;
         }
         
         .btn-secondary:hover {
@@ -696,29 +689,32 @@ foreach ($users as $user) {
             .sidebar {
                 width: 70px;
             }
-            
-            .main-content {
-                margin-left: 70px;
-                padding: 20px;
-            }
-            
-            .logo-text, .logo-subtitle, .nav-item span, .nav-section {
+
+            .logo-text,
+            .logo-subtitle,
+            .nav-item span,
+            .nav-section {
                 display: none;
             }
-            
+
             .logo {
                 padding: 20px 0;
                 text-align: center;
             }
-            
+
             .nav-item {
                 justify-content: center;
                 padding: 15px 0;
                 margin: 2px 8px;
             }
-            
+
             .nav-item i {
                 margin-right: 0;
+            }
+            
+            .main-content {
+                margin-left: 70px;
+                padding: 20px;
             }
             
             .header {
@@ -854,7 +850,6 @@ foreach ($users as $user) {
                         </button>
                     </div>
                     
-                    <!-- Confirm Modal -->
                     <div id="confirmModal" class="modal">
                         <div class="modal-content">
                             <div class="modal-header">
@@ -957,7 +952,6 @@ foreach ($users as $user) {
     </div>
     
     <script>
-        // Get user names for confirmation modal
         function openConfirmModal() {
             const fromSelect = document.getElementById('from_user_id');
             const toSelect = document.getElementById('to_user_id');
@@ -1004,7 +998,6 @@ foreach ($users as $user) {
             }, 3000);
         }
         
-        // Close modal when clicking outside
         window.onclick = function(event) {
             const modal = document.getElementById('confirmModal');
             if (event.target === modal) {
@@ -1012,7 +1005,6 @@ foreach ($users as $user) {
             }
         }
         
-        // Auto-dismiss alerts
         setTimeout(() => {
             const alerts = document.querySelectorAll('.alert');
             alerts.forEach(alert => {
