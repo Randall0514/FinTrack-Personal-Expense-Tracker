@@ -716,7 +716,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
           <i data-feather="mail" width="16"></i>
           Email Address
         </div>
-        <div class="info-value">wrta.colorada.up@phinmaed.com</div>
+        <div class="info-value">daaq.salinas.up@phinmaed.com</div>
       </div>
     </div>
     

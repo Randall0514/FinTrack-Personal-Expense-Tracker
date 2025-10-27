@@ -326,25 +326,18 @@
         background: #f0f7ff;
         border: 1px solid #bedaff;
         border-radius: 6px;
-        padding: 8px;
+        padding: 0;
         margin-top: 5px;
-        display: none;
-        animation: slideDown 0.3s ease-out;
-      }
-
-      @keyframes slideDown {
-        from {
-          opacity: 0;
-          transform: translateY(-10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: max-height 0.4s ease-out, opacity 0.3s ease-out, padding 0.4s ease-out, margin 0.4s ease-out;
       }
 
       .password-requirements.show {
-        display: block;
+        max-height: 200px;
+        opacity: 1;
+        padding: 8px;
       }
 
       .password-requirements h4 {
@@ -366,6 +359,7 @@
         padding: 2px 0;
         padding-left: 15px;
         position: relative;
+        transition: color 0.3s ease;
       }
 
       .password-requirements li::before {
@@ -375,7 +369,7 @@
         color: #ccc;
         font-weight: bold;
         font-size: 0.75rem;
-        transition: color 0.3s;
+        transition: color 0.3s ease;
       }
 
       .password-requirements li.met {
@@ -384,6 +378,121 @@
 
       .password-requirements li.met::before {
         color: #00C851;
+      }
+
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(5px);
+        animation: fadeIn 0.3s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      .modal.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal-content {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        max-width: 600px;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideInModal 0.3s ease-out;
+        position: relative;
+        margin: 20px;
+      }
+
+      @keyframes slideInModal {
+        from {
+          opacity: 0;
+          transform: translateY(-30px) scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e0e0e0;
+      }
+
+      .modal-header h3 {
+        font-size: 1.5rem;
+        color: #333;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .close-modal {
+        background: none;
+        border: none;
+        font-size: 1.8rem;
+        color: #666;
+        cursor: pointer;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.3s;
+      }
+
+      .close-modal:hover {
+        background: #f0f0f0;
+        color: #333;
+        transform: rotate(90deg);
+      }
+
+      .modal-body {
+        color: #555;
+        line-height: 1.6;
+        font-size: 0.9rem;
+        font-weight: 400;
+      }
+
+      .modal-body h4 {
+        color: #333;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        font-size: 1.1rem;
+      }
+
+      .modal-body p {
+        margin-bottom: 15px;
+      }
+
+      .modal-body ul {
+        margin-left: 20px;
+        margin-bottom: 15px;
+      }
+
+      .modal-body li {
+        margin-bottom: 8px;
       }
     </style>
     <script>
@@ -477,7 +586,7 @@
 
             <div class="checkbox-container">
               <input type="checkbox" id="terms" name="terms" required />
-              <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></label>
+              <label for="terms">I agree to the <a href="#" onclick="openModal('terms'); return false;">Terms of Service</a> and <a href="#" onclick="openModal('privacy'); return false;">Privacy Policy</a></label>
             </div>
 
             <button type="submit" name="submit" class="btn-signup">Create Account</button>
@@ -492,7 +601,121 @@
       </div>
     </div>
 
+    <!-- Terms of Service Modal -->
+    <div id="termsModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Terms of Service</h3>
+          <button class="close-modal" onclick="closeModal('terms')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Welcome to FinTrack!</strong></p>
+          
+          <h4>1. How to Use FinTrack</h4>
+          <p>FinTrack is a simple expense tracker for personal use. You can add, edit, and delete your expenses to help manage your budget.</p>
+          
+          <h4>2. Your Account</h4>
+          <p>Keep your password safe and don't share it with anyone. You're responsible for all activities under your account.</p>
+          
+          <h4>3. Your Data</h4>
+          <p>All your expense information is stored securely. We won't share your data with anyone.</p>
+          
+          <h4>4. Rules</h4>
+          <p>Please use FinTrack responsibly:</p>
+          <ul>
+            <li>Don't try to hack or break the system</li>
+            <li>Don't create fake accounts</li>
+            <li>Don't use offensive language</li>
+          </ul>
+          
+          <h4>5. Disclaimer</h4>
+          <p>FinTrack is a student project. We do our best to keep everything running smoothly, but we can't guarantee it will be perfect all the time.</p>
+          
+          <p>If you have questions, feel free to contact us at <a href="mailto:daaq.salinas.up@phinmaed.com">daaq.salinas.up@phinmaed.com</a></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Privacy Policy Modal -->
+    <div id="privacyModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Privacy Policy</h3>
+          <button class="close-modal" onclick="closeModal('privacy')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Your Privacy Matters</strong></p>
+          
+          <h4>1. What Information We Collect</h4>
+          <p>We only collect what's needed to make FinTrack work:</p>
+          <ul>
+            <li>Your name and email</li>
+            <li>Username and password</li>
+            <li>Your expense records (amount, category, date, notes)</li>
+          </ul>
+          
+          <h4>2. How We Use Your Information</h4>
+          <p>We use your information to:</p>
+          <ul>
+            <li>Let you log in and access your account</li>
+            <li>Save and display your expenses</li>
+            <li>Send you important updates if needed</li>
+          </ul>
+          
+          <h4>3. Keeping Your Data Safe</h4>
+          <p>We take security seriously. Your password is encrypted and your data is stored safely in our database.</p>
+          
+          <h4>4. Sharing Your Information</h4>
+          <p>We will NEVER sell or share your personal information with third parties. Your data is yours alone.</p>
+          
+          <h4>5. Your Rights</h4>
+          <p>You can:</p>
+          <ul>
+            <li>Delete your account anytime</li>
+            <li>Export your data</li>
+            <li>Update your information</li>
+          </ul>
+          
+          <h4>6. About This Project</h4>
+          <p>FinTrack is a student project created for educational purposes. We're committed to protecting your privacy while learning about web development.</p>
+          
+          <p>Questions? Contact us anytime at <a href="mailto:daaq.salinas.up@phinmaed.com">daaq.salinas.up@phinmaed.com</a></p>
+        </div>
+      </div>
+    </div>
+
     <script>
+      function openModal(type) {
+        const modal = type === 'terms' ? document.getElementById('termsModal') : document.getElementById('privacyModal');
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeModal(type) {
+        const modal = type === 'terms' ? document.getElementById('termsModal') : document.getElementById('privacyModal');
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+      }
+
+      // Close modal when clicking outside of it
+      window.onclick = function(event) {
+        const termsModal = document.getElementById('termsModal');
+        const privacyModal = document.getElementById('privacyModal');
+        if (event.target === termsModal) {
+          closeModal('terms');
+        } else if (event.target === privacyModal) {
+          closeModal('privacy');
+        }
+      }
+
+      // Close modal with Escape key
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+          closeModal('terms');
+          closeModal('privacy');
+        }
+      });
+
       const passwordInput = document.getElementById('password');
       const strengthBar = document.getElementById('strengthBar');
       const passwordRequirements = document.getElementById('passwordRequirements');

@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinTrack - Personal Expense Tracker</title>
-    <link rel="icon" type="image/x-icon" href="\practice\dist\assets\images\Logo.png">
     <style>
         * {
             margin: 0;
@@ -14,9 +13,9 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             line-height: 1.6;
-            color: #333;
+            color: #1a1a2e;
             overflow-x: hidden;
         }
         /* Navigation */
@@ -24,41 +23,79 @@
         nav {
             position: fixed;
             width: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 1.5rem 5%;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 1.2rem 8%;
             display: flex;
             justify-content: space-between;
             align-items: center;
             z-index: 1000;
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
         }
         
         .logo {
-            font-size: 2.5rem;
-            font-weight: bold;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            letter-spacing: -0.5px;
         }
         
         .nav-links {
             display: flex;
-            gap: 3rem;
+            gap: 2.5rem;
             list-style: none;
+            align-items: center;
         }
         
         .nav-links a {
             text-decoration: none;
-            color: #333;
-            font-weight: 600;
-            font-size: 1.2rem;
-            transition: color 0.3s;
+            color: #4a5568;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            transition: width 0.3s;
         }
         
         .nav-links a:hover {
-            color: #667eea;
+            color: #6366f1;
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        .nav-signup {
+            padding: 0.7rem 1.8rem;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white !important;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+        
+        .nav-signup:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+        
+        .nav-signup::after {
+            display: none;
         }
         /* Hero Section */
         
@@ -68,7 +105,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 6rem 5% 4rem;
+            padding: 8rem 8% 4rem;
             position: relative;
             overflow: hidden;
         }
@@ -76,183 +113,249 @@
         .hero::before {
             content: '';
             position: absolute;
-            width: 500px;
-            height: 500px;
-            background: rgba(255, 255, 255, 0.1);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
             border-radius: 50%;
-            top: -200px;
+            top: -300px;
             right: -200px;
-            animation: float 6s ease-in-out infinite;
+            animation: float 8s ease-in-out infinite;
         }
         
         .hero::after {
             content: '';
             position: absolute;
-            width: 300px;
-            height: 300px;
-            background: rgba(255, 255, 255, 0.1);
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
             border-radius: 50%;
-            bottom: -100px;
+            bottom: -150px;
             left: -100px;
-            animation: float 8s ease-in-out infinite;
+            animation: float 10s ease-in-out infinite reverse;
         }
         
         @keyframes float {
             0%,
             100% {
-                transform: translateY(0);
+                transform: translate(0, 0) scale(1);
             }
             50% {
-                transform: translateY(-20px);
+                transform: translate(20px, -30px) scale(1.05);
             }
         }
         
         .hero-content {
-            max-width: 1200px;
+            max-width: 1300px;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 5rem;
             align-items: center;
             z-index: 1;
         }
         
         .hero-text h1 {
-            font-size: 3.5rem;
+            font-size: 4rem;
             color: white;
             margin-bottom: 1.5rem;
-            line-height: 1.2;
+            line-height: 1.15;
+            font-weight: 800;
+            letter-spacing: -1.5px;
         }
         
         .hero-text p {
-            font-size: 1.3rem;
-            color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 2rem;
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.95);
+            margin-bottom: 2.5rem;
+            line-height: 1.7;
+            font-weight: 400;
         }
         
         .cta-button {
             display: inline-block;
-            padding: 1rem 2.5rem;
+            padding: 1.1rem 2.8rem;
             background: white;
-            color: #667eea;
+            color: #6366f1;
             text-decoration: none;
-            border-radius: 50px;
+            border-radius: 12px;
             font-weight: 600;
-            font-size: 1.1rem;
-            transition: all 0.3s;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            font-size: 1.05rem;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
         }
         
         .cta-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
         }
         
         .hero-image {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 2rem;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(30px);
+            border-radius: 32px;
+            padding: 4rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 400px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            min-height: 500px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            position: relative;
+            overflow: hidden;
         }
         
-        .mockup-placeholder {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
-            border-radius: 10px;
+        .hero-image::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+        
+        @keyframes rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .hero-image-inner {
+            position: relative;
+            z-index: 1;
+            background: white;
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 5rem;
-            color: rgba(255, 255, 255, 0.8);
+            transition: transform 0.5s ease;
+        }
+        
+        .hero-image:hover .hero-image-inner {
+            transform: scale(1.05);
+        }
+        
+        .hero-image img {
+            width: 240px;
+            height: auto;
+            border-radius: 20px;
+            filter: drop-shadow(0 10px 30px rgba(99, 102, 241, 0.4));
         }
         /* Features Section */
         
         .features {
-            padding: 6rem 5%;
-            background: #f8f9fa;
+            padding: 7rem 8%;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
         }
         
         .section-title {
             text-align: center;
-            font-size: 2.5rem;
+            font-size: 3rem;
             margin-bottom: 1rem;
-            color: #333;
+            color: #1a1a2e;
+            font-weight: 800;
+            letter-spacing: -1px;
         }
         
         .section-subtitle {
             text-align: center;
             font-size: 1.2rem;
-            color: #666;
-            margin-bottom: 4rem;
+            color: #64748b;
+            margin-bottom: 5rem;
+            font-weight: 400;
         }
         
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 2rem;
-            max-width: 1200px;
+            max-width: 1300px;
             margin: 0 auto;
         }
         
         .feature-card {
             background: white;
-            padding: 2.5rem;
-            border-radius: 15px;
-            text-align: center;
-            transition: all 0.3s;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            padding: 2.8rem 2.2rem;
+            border-radius: 20px;
+            text-align: left;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            border: 1px solid #f1f5f9;
         }
         
         .feature-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            transform: translateY(-12px);
+            box-shadow: 0 20px 50px rgba(99, 102, 241, 0.15);
+            border-color: #e0e7ff;
         }
         
         .feature-icon {
-            font-size: 3.5rem;
+            font-size: 3rem;
             margin-bottom: 1.5rem;
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+        
+        .feature-card:hover .feature-icon {
+            transform: scale(1.1);
         }
         
         .feature-card h3 {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             margin-bottom: 1rem;
-            color: #333;
+            color: #1a1a2e;
+            font-weight: 700;
         }
         
         .feature-card p {
-            color: #666;
-            line-height: 1.8;
+            color: #64748b;
+            line-height: 1.7;
+            font-size: 1rem;
         }
         /* Benefits Section */
         
         .benefits {
-            padding: 6rem 5%;
+            padding: 7rem 8%;
             background: white;
         }
         
         .benefits-content {
-            max-width: 1200px;
+            max-width: 1300px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 5rem;
             align-items: center;
         }
         
         .benefits-image {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            min-height: 400px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+            border-radius: 24px;
+            min-height: 500px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 5rem;
+            font-size: 6rem;
             color: white;
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .benefits-image::before {
+            content: '';
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            top: -50px;
+            right: -50px;
         }
         
         .benefits-list {
@@ -260,166 +363,190 @@
         }
         
         .benefits-list li {
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid #667eea;
-            transition: all 0.3s;
+            padding: 1.8rem 2rem;
+            margin-bottom: 1.2rem;
+            background: #f8fafc;
+            border-radius: 16px;
+            border-left: 4px solid #6366f1;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         
         .benefits-list li:hover {
-            background: #667eea;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             color: white;
-            transform: translateX(10px);
+            transform: translateX(15px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2);
         }
         
         .benefits-list strong {
             display: block;
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
+            font-size: 1.25rem;
+            margin-bottom: 0.6rem;
+            font-weight: 700;
         }
         /* Stakeholders Section */
         
         .stakeholders {
-            padding: 6rem 5%;
-            background: #f8f9fa;
+            padding: 7rem 8%;
+            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
         }
         
         .stakeholders-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            max-width: 1200px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2.5rem;
+            max-width: 1300px;
             margin: 0 auto;
         }
         
         .stakeholder-card {
             background: white;
-            padding: 2.5rem;
-            border-radius: 15px;
+            padding: 3rem 2.5rem;
+            border-radius: 20px;
             text-align: center;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            border: 1px solid #f1f5f9;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .stakeholder-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(99, 102, 241, 0.15);
+            border-color: #e0e7ff;
         }
         
         .stakeholder-icon {
-            font-size: 4rem;
+            font-size: 4.5rem;
             margin-bottom: 1.5rem;
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+        
+        .stakeholder-card:hover .stakeholder-icon {
+            transform: scale(1.15) rotate(5deg);
         }
         
         .stakeholder-card h3 {
             font-size: 1.5rem;
             margin-bottom: 1rem;
-            color: #333;
+            color: #1a1a2e;
+            font-weight: 700;
+        }
+        
+        .stakeholder-card p {
+            color: #64748b;
+            line-height: 1.7;
+            font-size: 1rem;
         }
         /* CTA Section */
         
         .cta-section {
-            padding: 6rem 5%;
+            padding: 7rem 8%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             text-align: center;
             color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            top: -200px;
+            left: -200px;
         }
         
         .cta-section h2 {
-            font-size: 2.5rem;
+            font-size: 3rem;
             margin-bottom: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            position: relative;
+            z-index: 1;
         }
         
         .cta-section p {
             font-size: 1.3rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
+            margin-bottom: 2.5rem;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
         }
         
         .cta-button-white {
             display: inline-block;
-            padding: 1rem 2.5rem;
+            padding: 1.2rem 3rem;
             background: white;
-            color: #667eea;
+            color: #6366f1;
             text-decoration: none;
-            border-radius: 50px;
+            border-radius: 12px;
             font-weight: 600;
             font-size: 1.1rem;
-            transition: all 0.3s;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+            position: relative;
+            z-index: 1;
         }
         
         .cta-button-white:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
         }
         /* Footer */
         
         footer {
-            background: #1a1a1a;
+            background: #0f172a;
             color: white;
-            padding: 3rem 5%;
+            padding: 3.5rem 8%;
             text-align: center;
         }
         
         footer p {
             opacity: 0.8;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
         }
-        /* PC/Laptop Optimization - Fixed widths for larger screens */
+        /* Responsive Design */
         
-        @media (min-width: 1400px) {
-            nav,
-            .hero,
-            .features,
-            .benefits,
-            .stakeholders,
-            .cta-section {
-                padding-left: calc((100% - 1400px) / 2);
-                padding-right: calc((100% - 1400px) / 2);
-            }
+        @media (max-width: 1200px) {
             .hero-content {
-                max-width: 1400px;
+                grid-template-columns: 1fr;
+                gap: 3rem;
             }
-            .features-grid {
-                max-width: 1400px;
+            .hero-image {
+                max-width: 400px;
+                margin: 0 auto;
             }
             .benefits-content {
-                max-width: 1400px;
+                grid-template-columns: 1fr;
+                gap: 3rem;
             }
-            .stakeholders-grid {
-                max-width: 1400px;
-            }
-        }
-        /* Standard Laptop Size (1024px - 1399px) */
-        
-        @media (min-width: 1024px) and (max-width: 1399px) {
-            .hero-text h1 {
-                font-size: 3rem;
-            }
-            .hero-text p {
-                font-size: 1.2rem;
-            }
-            .features-grid {
-                grid-template-columns: repeat(3, 1fr);
+            .benefits-image {
+                max-width: 400px;
+                margin: 0 auto;
             }
         }
-        /* Remove mobile responsiveness - maintain desktop layout */
         
-        @media (max-width: 1023px) {
-            body {
-                min-width: 1024px;
-                overflow-x: auto;
-            }
+        @media (max-width: 768px) {
             nav {
-                padding: 1rem 3%;
+                padding: 1rem 5%;
             }
-            .hero-content {
-                padding: 0 3%;
+            .nav-links {
+                gap: 1.5rem;
             }
             .hero-text h1 {
                 font-size: 2.5rem;
             }
-            .hero-text p {
-                font-size: 1.1rem;
+            .section-title {
+                font-size: 2rem;
             }
-            .features-grid {
-                grid-template-columns: repeat(2, 1fr);
+            .features-grid,
+            .stakeholders-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -434,6 +561,7 @@
             <li><a href="#features">Features</a></li>
             <li><a href="#benefits">Benefits</a></li>
             <li><a href="#users">For You</a></li>
+            <li><a href="http://localhost/FinTrack-Personal-Expense-Tracker/practice/signup.php" class="nav-signup">Sign Up</a></li>
         </ul>
     </nav>
 
@@ -442,11 +570,13 @@
         <div class="hero-content">
             <div class="hero-text">
                 <h1>Take Control of Your Finances</h1>
-                <p>Track expenses, manage budgets, and build better financial habits with FinTrack - your personal expense tracker.</p>
+                <p>Track expenses, manage budgets, and build better financial habits with FinTrack - your personal expense tracker designed for everyone.</p>
                 <a href="http://localhost/FinTrack-Personal-Expense-Tracker/practice/login.php" class="cta-button">Get Started Free</a>
             </div>
             <div class="hero-image">
-                <img src="\practice\dist\assets\images\Logo.png" alt="FinTrack Logo" class="mockup-placeholder" style="width: 200px; height: auto; border-radius: 10px;">
+                <div class="hero-image-inner">
+                    <img src="\practice\dist\assets\images\Logo.png" alt="FinTrack Logo">
+                </div>
             </div>
         </div>
     </section>
@@ -457,34 +587,29 @@
         <p class="section-subtitle">Everything you need to manage your personal finances</p>
         <div class="features-grid">
             <div class="feature-card">
-                <div class="feature-icon">📝</div>
-                <h3>Easy Expense Recording</h3>
-                <p>Quickly log your daily expenses with amount, category, date, and description in just seconds.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">📊</div>
-                <h3>Smart Categorization</h3>
-                <p>Organize spending into custom categories for clear insights into where your money goes.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">📈</div>
-                <h3>Detailed Reports</h3>
-                <p>View comprehensive summaries of your spending patterns - daily, weekly, or monthly.</p>
+                <div class="feature-icon">➕</div>
+                <h3>Add Expense</h3>
+                <p>Input amount, category, date, and description to quickly record your expenses in seconds.</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">✏️</div>
-                <h3>Edit & Delete</h3>
-                <p>Full control over your records. Easily modify or remove any expense entry.</p>
+                <h3>Edit/Delete Expense</h3>
+                <p>Update or remove entries with ease. Full control over your expense records anytime.</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">💻</div>
-                <h3>Offline Access</h3>
-                <p>Desktop-based system that works completely offline. No internet required.</p>
+                <div class="feature-icon">📋</div>
+                <h3>View Expense History</h3>
+                <p>Display a chronological list of all your expenses for easy tracking and review.</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">🎯</div>
-                <h3>Financial Insights</h3>
-                <p>Gain awareness of spending habits to improve budgeting decisions and financial discipline.</p>
+                <div class="feature-icon">🔍</div>
+                <h3>Search & Filter</h3>
+                <p>Locate specific expenses quickly with powerful search and filtering capabilities.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Summary Report</h3>
+                <p>Show total spending per category and time period with detailed visual summaries.</p>
             </div>
         </div>
     </section>
@@ -517,23 +642,23 @@
 
     <!-- Stakeholders Section -->
     <section class="stakeholders" id="users">
-        <h2 class="section-title">Perfect For</h2>
-        <p class="section-subtitle">Whether you're a student, professional, or managing household finances</p>
+        <h2 class="section-title">Perfect For Everyone</h2>
+        <p class="section-subtitle">Whether you're a student, professional, or individual managing personal finances - FinTrack adapts to your needs</p>
         <div class="stakeholders-grid">
             <div class="stakeholder-card">
                 <div class="stakeholder-icon">🎓</div>
                 <h3>Students</h3>
-                <p>Track your allowance, manage student expenses, and build good financial habits early.</p>
+                <p>Track your allowance, manage student expenses, and build good financial habits early in life.</p>
             </div>
             <div class="stakeholder-card">
                 <div class="stakeholder-icon">💼</div>
                 <h3>Professionals</h3>
-                <p>Monitor monthly budgets, track business expenses, and maintain financial discipline.</p>
+                <p>Monitor monthly budgets, track business expenses, and maintain financial discipline in your career.</p>
             </div>
             <div class="stakeholder-card">
-                <div class="stakeholder-icon">👨‍👩‍👧‍👦</div>
-                <h3>Families</h3>
-                <p>Manage household expenses, plan family budgets, and keep everyone financially organized.</p>
+                <div class="stakeholder-icon">👤</div>
+                <h3>Individuals</h3>
+                <p>Manage your personal finances, control daily spending, and achieve your financial goals with ease.</p>
             </div>
         </div>
     </section>
@@ -542,7 +667,7 @@
     <section class="cta-section">
         <h2>Ready to Transform Your Financial Life?</h2>
         <p>Join thousands of users who have taken control of their finances with FinTrack</p>
-        <a href="http://localhost/FinTrack-Personal-Expense-Tracker/practice/login.php" class="cta-button-white">Download FinTrack Now</a>
+        <a href="http://localhost/FinTrack-Personal-Expense-Tracker/practice/login.php" class="cta-button-white">Start Your Journey Today</a>
     </section>
 
     <!-- Footer -->
