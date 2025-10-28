@@ -39,6 +39,45 @@ require_once '../config/dbconfig_password.php';
 $message = '';
 $message_type = '';
 
+// Create system_settings table if it doesn't exist
+$conn->query("CREATE TABLE IF NOT EXISTS system_settings (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    setting_key VARCHAR(100) UNIQUE,
+    setting_value VARCHAR(255),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+)");
+
+// Toggle automatic approval
+if (isset($_POST['toggle_auto_approval'])) {
+    $new_status = $_POST['auto_approval_status'];
+    
+    $stmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('auto_approval', ?) 
+                           ON DUPLICATE KEY UPDATE setting_value = ?");
+    $stmt->bind_param("ss", $new_status, $new_status);
+    
+    if ($stmt->execute()) {
+        if ($new_status === '1') {
+            // Auto-approve all pending users when turning on automatic approval
+            $conn->query("UPDATE users SET is_approved = 1 WHERE is_approved = 0 OR is_approved IS NULL");
+            $message = "Automatic approval enabled! All pending users have been approved.";
+        } else {
+            $message = "Automatic approval disabled. New users will require manual approval.";
+        }
+        $message_type = "success";
+    } else {
+        $message = "Error updating approval setting: " . $conn->error;
+        $message_type = "error";
+    }
+}
+
+// Get current auto-approval setting
+$auto_approval_enabled = false;
+$auto_approval_result = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'auto_approval'");
+if ($auto_approval_result && $auto_approval_result->num_rows > 0) {
+    $setting = $auto_approval_result->fetch_assoc();
+    $auto_approval_enabled = ($setting['setting_value'] === '1');
+}
+
 // Approve single user
 if (isset($_POST['approve_user'])) {
     $target_user_id = $_POST['user_id'];
@@ -169,6 +208,53 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
                 </div>
             <?php endif; ?>
             
+            <!-- Auto-Approval Toggle Card -->
+            <div class="data-card">
+                <div class="card-header">
+                    <div class="card-title-wrapper">
+                        <div class="card-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <div>
+                            <div class="card-title">Approval Settings</div>
+                            <div class="page-subtitle">Configure automatic or manual user approval</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="approval-setting-container">
+                    <div class="approval-setting-info">
+                        <div class="approval-mode-title">
+                            <i class="fas fa-<?php echo $auto_approval_enabled ? 'bolt' : 'hand-paper'; ?>"></i>
+                            <?php echo $auto_approval_enabled ? 'Automatic Approval' : 'Manual Approval'; ?>
+                        </div>
+                        <div class="approval-mode-description">
+                            <?php if ($auto_approval_enabled): ?>
+                                New users are automatically approved upon registration. They can access the system immediately.
+                            <?php else: ?>
+                                New users must wait for admin approval before accessing the system. Review pending users below.
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    
+                    <form method="POST" class="toggle-form">
+                        <input type="hidden" name="auto_approval_status" value="<?php echo $auto_approval_enabled ? '0' : '1'; ?>">
+                        <label class="toggle-switch">
+                            <input type="checkbox" <?php echo $auto_approval_enabled ? 'checked' : ''; ?> onchange="this.form.submit()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <input type="hidden" name="toggle_auto_approval" value="1">
+                    </form>
+                </div>
+                
+                <div class="approval-status-badge <?php echo $auto_approval_enabled ? 'status-active' : 'status-inactive'; ?>">
+                    <i class="fas fa-circle"></i>
+                    <?php echo $auto_approval_enabled ? 'Auto-Approval Active' : 'Manual Approval Active'; ?>
+                </div>
+            </div>
+            
+            <!-- Pending Approval Card - Only show when manual approval is enabled -->
+            <?php if (!$auto_approval_enabled): ?>
             <div class="data-card">
                 <div class="card-header">
                     <div class="card-title-wrapper">
@@ -230,6 +316,7 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
                     </div>
                 <?php endif; ?>
             </div>
+            <?php endif; ?>
             
             <div class="data-card">
                 <div class="card-header">
@@ -256,6 +343,7 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
                                     <?php echo htmlspecialchars($user['username']); ?>
                                 </div>
                             </div>
+                            <?php if (!$auto_approval_enabled): ?>
                             <div class="user-actions">
                                 <form method="POST">
                                     <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
@@ -264,6 +352,7 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
                                     </button>
                                 </form>
                             </div>
+                            <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
                 <?php else: ?>

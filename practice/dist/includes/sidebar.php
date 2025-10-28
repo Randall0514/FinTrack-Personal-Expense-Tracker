@@ -410,11 +410,11 @@ $current_page = basename($_SERVER['PHP_SELF']);
 .modal-content {
   position: relative;
   background: white;
-  margin: 1% auto;
+  margin: 8% auto;
   padding: 0;
-  border-radius: 16px;
-  width: 85%;
-  max-width: 420px;
+  border-radius: 14px;
+  width: 75%;
+  max-width: 340px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: slideDown 0.4s ease;
   overflow: hidden;
@@ -433,7 +433,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 .modal-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 1.5rem;
+  padding: 1rem;
   text-align: center;
   position: relative;
 }
@@ -450,12 +450,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
 }
 
 .modal-logo {
-  width: 60px;
-  height: 60px;
-  margin: 0 auto 0.75rem;
+  width: 42px;
+  height: 42px;
+  margin: 0 auto 0.4rem;
   background: white;
-  border-radius: 15px;
-  padding: 0.75rem;
+  border-radius: 12px;
+  padding: 0.5rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   position: relative;
   z-index: 1;
@@ -469,9 +469,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 .modal-title {
   color: white;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: 800;
-  margin: 0 0 0.25rem 0;
+  margin: 0 0 0.2rem 0;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
   position: relative;
   z-index: 1;
@@ -479,7 +479,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 .modal-subtitle {
   color: rgba(255, 255, 255, 0.9);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   margin: 0;
   font-weight: 500;
   position: relative;
@@ -487,11 +487,11 @@ $current_page = basename($_SERVER['PHP_SELF']);
 }
 
 .modal-body {
-  padding: 1.5rem;
+  padding: 1rem;
 }
 
 .info-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .info-label {
@@ -508,24 +508,25 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 .info-value {
   color: #1f2937;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  padding: 0.75rem;
+  padding: 0.6rem;
   background: #f3f4f6;
-  border-radius: 10px;
-  border-left: 4px solid #667eea;
+  border-radius: 8px;
+  border-left: 3px solid #667eea;
+  line-height: 1.4;
 }
 
 .modal-footer {
   background: #f9fafb;
-  padding: 1.5rem 2rem;
+  padding: 1rem 1.5rem;
   text-align: center;
   border-top: 1px solid #e5e7eb;
 }
 
 .copyright-text {
   color: #6b7280;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   margin: 0;
   font-weight: 500;
 }

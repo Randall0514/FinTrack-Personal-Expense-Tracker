@@ -63,7 +63,7 @@ if (empty($current_user['profile_picture']) || $current_user['profile_picture'] 
     $current_user['has_custom_picture'] = true;
 }
 
-// Handle Profile Picture Upload
+// Handle Profile Picture Upload with cropped data
 if (isset($_POST['upload_picture'])) {
     $target_dir = "upload/images/";
     
@@ -71,46 +71,49 @@ if (isset($_POST['upload_picture'])) {
         mkdir($target_dir, 0777, true);
     }
     
-    if (isset($_FILES["profile_picture"]) && $_FILES["profile_picture"]["error"] == 0) {
-        $file_extension = strtolower(pathinfo($_FILES["profile_picture"]["name"], PATHINFO_EXTENSION));
-        $new_filename = "profile_" . $user_id . "_" . time() . "." . $file_extension;
-        $target_file = $target_dir . $new_filename;
+    // Check if cropped image data is provided
+    if (isset($_POST['cropped_image_data']) && !empty($_POST['cropped_image_data'])) {
+        $imageData = $_POST['cropped_image_data'];
         
-        $allowed_types = ['jpg', 'jpeg', 'png', 'gif'];
-        $max_size = 5 * 1024 * 1024; // 5MB
+        // Remove data URL prefix
+        $imageData = str_replace('data:image/png;base64,', '', $imageData);
+        $imageData = str_replace(' ', '+', $imageData);
+        $decodedImage = base64_decode($imageData);
         
-        if (!in_array($file_extension, $allowed_types)) {
-            $message = "Only JPG, JPEG, PNG & GIF files are allowed!";
-            $message_type = "warning";
-        } elseif ($_FILES["profile_picture"]["size"] > $max_size) {
-            $message = "File size must be less than 5MB!";
-            $message_type = "warning";
-        } elseif (move_uploaded_file($_FILES["profile_picture"]["tmp_name"], $target_file)) {
-            // Delete old profile picture if it exists and is not default
-            if ($current_user['has_custom_picture'] && file_exists($current_user['profile_picture'])) {
-                unlink($current_user['profile_picture']);
-            }
+        if ($decodedImage !== false) {
+            $new_filename = "profile_" . $user_id . "_" . time() . ".png";
+            $target_file = $target_dir . $new_filename;
             
-            $sql = "UPDATE users SET profile_picture = ? WHERE id = ?";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("si", $target_file, $user_id);
-            
-            if ($stmt->execute()) {
-                $message = "Profile picture updated successfully!";
-                $message_type = "success";
-                $current_user['profile_picture'] = $target_file;
-                $current_user['has_custom_picture'] = true;
+            if (file_put_contents($target_file, $decodedImage)) {
+                // Delete old profile picture if it exists and is not default
+                if ($current_user['has_custom_picture'] && file_exists($current_user['profile_picture'])) {
+                    unlink($current_user['profile_picture']);
+                }
+                
+                $sql = "UPDATE users SET profile_picture = ? WHERE id = ?";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("si", $target_file, $user_id);
+                
+                if ($stmt->execute()) {
+                    $message = "Profile picture updated successfully!";
+                    $message_type = "success";
+                    $current_user['profile_picture'] = $target_file;
+                    $current_user['has_custom_picture'] = true;
+                } else {
+                    $message = "Error saving profile picture to database.";
+                    $message_type = "danger";
+                }
+                $stmt->close();
             } else {
-                $message = "Error saving profile picture to database.";
+                $message = "Error saving cropped image.";
                 $message_type = "danger";
             }
-            $stmt->close();
         } else {
-            $message = "Error uploading file.";
+            $message = "Error processing cropped image.";
             $message_type = "danger";
         }
     } else {
-        $message = "No file selected or upload error occurred.";
+        $message = "No cropped image data provided.";
         $message_type = "warning";
     }
 }
@@ -243,493 +246,8 @@ if ($security_settings['require_uppercase']) {
   <link rel="stylesheet" href="../assets/fonts/fontawesome.css" />
   <link rel="stylesheet" href="../assets/fonts/material.css" />
   <link rel="stylesheet" href="../assets/css/style.css" id="main-style-link" />
-
-  <style>
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-      min-height: 100vh;
-      font-weight: 600;
-    }
-
-    .pc-container { background: transparent !important; }
-    .pc-content { padding: 20px; max-width: 1400px; margin: 0 auto; }
-
-    .page-header {
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(10px);
-      border-radius: 15px;
-      padding: 25px 30px;
-      margin-bottom: 30px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .page-header-title h5 {
-      color: white !important;
-      font-weight: 700;
-      font-size: 2rem;
-      margin-bottom: 5px;
-    }
-
-    .page-subtitle {
-      color: rgba(255, 255, 255, 0.85);
-      font-size: 0.95rem;
-      margin-top: 5px;
-    }
-
-    .breadcrumb { background: transparent !important; margin-top: 10px; }
-    .breadcrumb-item, .breadcrumb-item a {
-      color: rgba(255, 255, 255, 0.9) !important;
-      font-weight: 600;
-    }
-
-    .card {
-      background: rgba(255, 255, 255, 0.98) !important;
-      backdrop-filter: blur(20px);
-      border-radius: 20px !important;
-      border: none !important;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
-      margin-bottom: 25px;
-      overflow: hidden;
-      transition: all 0.3s ease;
-    }
-
-    .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25) !important;
-    }
-
-    .card-header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-      border: none !important;
-      padding: 20px 30px !important;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .card-header h6 {
-      color: white !important;
-      font-weight: 700;
-      font-size: 1.15rem;
-      margin: 0;
-      letter-spacing: 0.3px;
-    }
-
-    .card-header i {
-      font-size: 1.4rem;
-      color: white;
-    }
-
-    .card-body { 
-      padding: 35px 30px !important;
-    }
-
-    .alert {
-      padding: 18px 25px;
-      border-radius: 12px;
-      margin-bottom: 25px;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      animation: slideInDown 0.5s ease-out;
-      font-weight: 600;
-      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    .alert-success {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: white;
-    }
-
-    .alert-danger {
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-      color: white;
-    }
-
-    .alert-warning {
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-      color: white;
-    }
-
-    .alert i {
-      font-size: 1.6rem;
-    }
-
-    .settings-grid {
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 25px;
-    }
-
-    .col-span-12 { grid-column: span 12; }
-    .col-span-6 { grid-column: span 6; }
-    .col-span-4 { grid-column: span 4; }
-    .col-span-8 { grid-column: span 8; }
-
-    @media (max-width: 1024px) {
-      .col-span-8 { grid-column: span 12; }
-      .col-span-4 { grid-column: span 12; }
-    }
-
-    @media (max-width: 768px) {
-      .col-span-6 { grid-column: span 12; }
-    }
-
-    /* Profile Picture Section */
-    .profile-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 25px;
-      width: 100%;
-    }
-
-    .profile-picture-wrapper {
-      position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .profile-preview {
-      width: 180px;
-      height: 180px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 6px solid #667eea;
-      box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
-      transition: all 0.3s ease;
-    }
-
-    .profile-preview:hover {
-      transform: scale(1.05);
-      box-shadow: 0 20px 50px rgba(102, 126, 234, 0.5);
-    }
-
-    .no-picture {
-      width: 180px;
-      height: 180px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 4rem;
-      font-weight: 700;
-      border: 6px solid white;
-      box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
-      transition: all 0.3s ease;
-    }
-
-    .no-picture:hover {
-      transform: scale(1.05);
-      box-shadow: 0 20px 50px rgba(102, 126, 234, 0.5);
-    }
-
-    .upload-btn-wrapper {
-      position: relative;
-      overflow: hidden;
-      width: 100%;
-    }
-
-    .upload-btn-wrapper input[type=file] {
-      position: absolute;
-      left: -9999px;
-    }
-
-    .upload-btn {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 14px 25px;
-      border-radius: 12px;
-      border: none;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.3s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      width: 100%;
-      font-size: 0.95rem;
-    }
-
-    .upload-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-    }
-
-    .upload-btn i {
-      font-size: 1.2rem;
-    }
-
-    /* Form Styles */
-    .form-group {
-      margin-bottom: 25px;
-    }
-
-    .form-group label {
-      display: block;
-      color: #667eea;
-      font-weight: 700;
-      margin-bottom: 10px;
-      font-size: 0.95rem;
-      letter-spacing: 0.3px;
-    }
-
-    .input-wrapper {
-      position: relative;
-    }
-
-    .toggle-password {
-      position: absolute;
-      right: 15px;
-      top: 50%;
-      transform: translateY(-50%);
-      cursor: pointer;
-      color: #666;
-      transition: color 0.3s;
-      display: flex;
-      align-items: center;
-      z-index: 10;
-    }
-
-    .toggle-password:hover {
-      color: #667eea;
-    }
-
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      width: 100%;
-      padding: 14px 45px 14px 18px;
-      border: 2px solid #e5e7eb;
-      border-radius: 12px;
-      outline: none;
-      transition: all 0.3s;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.95rem;
-      background: white;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-      border-color: #667eea;
-      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-    }
-
-    /* Buttons */
-    .btn {
-      padding: 14px 32px;
-      border-radius: 12px;
-      border: none;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.3s;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.95rem;
-      letter-spacing: 0.3px;
-    }
-
-    .btn i {
-      font-size: 1.1rem;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-    }
-
-    .btn-danger {
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-      color: white;
-      box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
-    }
-
-    .btn-danger:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
-    }
-
-    .btn-secondary {
-      background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-      color: white;
-      box-shadow: 0 5px 15px rgba(107, 114, 128, 0.3);
-    }
-
-    .btn-secondary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(107, 114, 128, 0.4);
-    }
-
-    .btn-full {
-      width: 100%;
-      justify-content: center;
-    }
-
-    /* Info Box */
-    .info-box {
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-      padding: 18px 20px;
-      border-radius: 12px;
-      margin-top: 15px;
-      color: #666;
-      font-size: 0.9rem;
-      border-left: 4px solid #667eea;
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-    }
-
-    .info-box i {
-      color: #667eea;
-      font-size: 1.3rem;
-      margin-top: 2px;
-    }
-
-    /* Budget Stats */
-    .budget-stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 15px;
-      margin-bottom: 30px;
-    }
-
-    .stat-card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 20px;
-      border-radius: 15px;
-      text-align: center;
-      color: white;
-      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-      transition: all 0.3s;
-    }
-
-    .stat-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
-    }
-
-    .stat-card:nth-child(2) {
-      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-    }
-
-    .stat-card:nth-child(3) {
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    }
-
-    .stat-card h4 {
-      margin: 0 0 8px 0;
-      font-size: 1.8rem;
-      font-weight: 700;
-    }
-
-    .stat-card p {
-      margin: 0;
-      font-size: 0.9rem;
-      opacity: 0.95;
-      font-weight: 600;
-    }
-
-    @media (max-width: 768px) {
-      .budget-stats {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* Account Actions */
-    .action-buttons {
-      display: flex;
-      gap: 15px;
-      flex-wrap: wrap;
-    }
-
-    .action-card {
-      flex: 1;
-      min-width: 200px;
-      padding: 25px;
-      border-radius: 15px;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-      border: 2px solid rgba(102, 126, 234, 0.2);
-      transition: all 0.3s;
-      text-align: center;
-    }
-
-    .action-card:hover {
-      border-color: #667eea;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
-      transform: translateY(-3px);
-    }
-
-    .action-card i {
-      font-size: 2.5rem;
-      color: #667eea;
-      margin-bottom: 15px;
-    }
-
-    .action-card h6 {
-      color: #667eea;
-      font-weight: 700;
-      margin-bottom: 15px;
-    }
-
-    @keyframes slideInDown {
-      from {
-        opacity: 0;
-        transform: translateY(-30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 20px;
-    }
-
-    @media (max-width: 768px) {
-      .form-row {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* Password strength indicator */
-    .password-strength {
-      margin-top: 10px;
-      height: 4px;
-      border-radius: 2px;
-      background: #e5e7eb;
-      overflow: hidden;
-    }
-
-    .password-strength-bar {
-      height: 100%;
-      transition: all 0.3s;
-      width: 0%;
-    }
-
-    .password-strength-text {
-      font-size: 0.85rem;
-      margin-top: 5px;
-      font-weight: 600;
-    }
-  </style>
+  <link rel="stylesheet" href="style/settings.css">
+  
 </head>
 
 <body>
@@ -741,6 +259,55 @@ if ($security_settings['require_uppercase']) {
 
   <?php include '../includes/sidebar.php'; ?>
   <?php include '../includes/header.php'; ?>
+
+  <!-- Image Cropper Modal -->
+  <div id="cropperModal" class="cropper-modal">
+    <div class="cropper-content">
+      <div class="cropper-header">
+        <h2>Adjust Your Photo</h2>
+        <p>Drag to reposition, use controls to zoom and rotate</p>
+      </div>
+
+      <div class="cropper-canvas-wrapper" id="cropperWrapper">
+        <canvas id="cropperCanvas" width="400" height="400"></canvas>
+      </div>
+
+      <div class="cropper-controls">
+        <div class="control-group">
+          <label>
+            <span style="display: flex; align-items: center; gap: 8px;">
+              <i class="feather icon-zoom-in"></i>
+              Zoom
+            </span>
+            <span id="zoomValue">100%</span>
+          </label>
+          <input type="range" id="zoomSlider" min="0.5" max="3" step="0.1" value="1">
+        </div>
+
+        <div class="control-group">
+          <label>
+            <span style="display: flex; align-items: center; gap: 8px;">
+              <i class="feather icon-rotate-cw"></i>
+              Rotation
+            </span>
+            <span id="rotationValue">0°</span>
+          </label>
+          <input type="range" id="rotationSlider" min="0" max="360" step="1" value="0">
+        </div>
+      </div>
+
+      <div class="cropper-buttons">
+        <button type="button" class="btn btn-secondary" onclick="cancelCrop()">
+          <i class="feather icon-x"></i>
+          <span>Cancel</span>
+        </button>
+        <button type="button" class="btn btn-primary" onclick="applyCrop()">
+          <i class="feather icon-check"></i>
+          <span>Apply Crop</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <div class="pc-container">
     <div class="pc-content">
@@ -788,6 +355,8 @@ if ($security_settings['require_uppercase']) {
                 </div>
 
                 <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                  <input type="hidden" name="cropped_image_data" id="croppedImageData">
+                  
                   <div class="upload-btn-wrapper">
                     <label for="profile_picture" class="upload-btn">
                       <i class="feather icon-upload"></i>
@@ -797,9 +366,10 @@ if ($security_settings['require_uppercase']) {
                            name="profile_picture" 
                            id="profile_picture" 
                            accept="image/jpeg,image/jpg,image/png,image/gif"
-                           onchange="previewFile()">
+                           onchange="handleFileSelect(event)">
                   </div>
-                  <button type="submit" name="upload_picture" class="btn btn-primary btn-full" style="margin-top: 15px;">
+                  
+                  <button type="submit" name="upload_picture" class="btn btn-primary btn-full" id="saveBtn" style="margin-top: 15px; display: none;">
                     <i class="feather icon-save"></i>
                     <span>Save Picture</span>
                   </button>
@@ -1089,6 +659,16 @@ if ($security_settings['require_uppercase']) {
   <script src="../assets/js/script.js"></script>
 
   <script>
+    // Image Cropper Variables
+    let currentImage = null;
+    let canvas = null;
+    let ctx = null;
+    let scale = 1;
+    let rotation = 0;
+    let position = { x: 0, y: 0 };
+    let isDragging = false;
+    let dragStart = { x: 0, y: 0 };
+
     // Security settings from PHP
     const securitySettings = {
       minLength: <?php echo $security_settings['password_min_length']; ?>,
@@ -1096,6 +676,187 @@ if ($security_settings['require_uppercase']) {
       requireNumbers: <?php echo $security_settings['require_numbers'] ? 'true' : 'false'; ?>,
       requireUppercase: <?php echo $security_settings['require_uppercase'] ? 'true' : 'false'; ?>
     };
+
+    // Initialize canvas
+    document.addEventListener('DOMContentLoaded', function() {
+      canvas = document.getElementById('cropperCanvas');
+      ctx = canvas.getContext('2d');
+
+      // Dragging events
+      const wrapper = document.getElementById('cropperWrapper');
+      
+      wrapper.addEventListener('mousedown', startDrag);
+      wrapper.addEventListener('mousemove', drag);
+      wrapper.addEventListener('mouseup', stopDrag);
+      wrapper.addEventListener('mouseleave', stopDrag);
+
+      // Touch events for mobile
+      wrapper.addEventListener('touchstart', handleTouchStart);
+      wrapper.addEventListener('touchmove', handleTouchMove);
+      wrapper.addEventListener('touchend', stopDrag);
+
+      // Zoom slider
+      document.getElementById('zoomSlider').addEventListener('input', function(e) {
+        scale = parseFloat(e.target.value);
+        document.getElementById('zoomValue').textContent = Math.round(scale * 100) + '%';
+        drawImage();
+      });
+
+      // Rotation slider
+      document.getElementById('rotationSlider').addEventListener('input', function(e) {
+        rotation = parseInt(e.target.value);
+        document.getElementById('rotationValue').textContent = rotation + '°';
+        drawImage();
+      });
+    });
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('Invalid file type. Only JPG, PNG, and GIF allowed.');
+        event.target.value = '';
+        return;
+      }
+
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size too large. Maximum 5MB allowed.');
+        event.target.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        currentImage = new Image();
+        currentImage.onload = function() {
+          // Reset transformations
+          scale = 1;
+          rotation = 0;
+          position = { x: 0, y: 0 };
+          
+          document.getElementById('zoomSlider').value = 1;
+          document.getElementById('zoomValue').textContent = '100%';
+          document.getElementById('rotationSlider').value = 0;
+          document.getElementById('rotationValue').textContent = '0°';
+
+          // Show modal and draw image
+          document.getElementById('cropperModal').classList.add('active');
+          drawImage();
+        };
+        currentImage.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function drawImage() {
+      if (!currentImage || !ctx) return;
+
+      const size = canvas.width;
+      ctx.clearRect(0, 0, size, size);
+      ctx.save();
+
+      // Center and apply transformations
+      ctx.translate(size / 2 + position.x, size / 2 + position.y);
+      ctx.rotate((rotation * Math.PI) / 180);
+      ctx.scale(scale, scale);
+
+      // Calculate dimensions to fit image
+      const imgRatio = currentImage.width / currentImage.height;
+      let drawWidth = size;
+      let drawHeight = size;
+
+      if (imgRatio > 1) {
+        drawHeight = size / imgRatio;
+      } else {
+        drawWidth = size * imgRatio;
+      }
+
+      ctx.drawImage(currentImage, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+      ctx.restore();
+
+      // Apply circular mask
+      ctx.globalCompositeOperation = 'destination-in';
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    function startDrag(e) {
+      isDragging = true;
+      dragStart = {
+        x: e.clientX - position.x,
+        y: e.clientY - position.y
+      };
+    }
+
+    function drag(e) {
+      if (!isDragging) return;
+      
+      position = {
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      };
+      drawImage();
+    }
+
+    function stopDrag() {
+      isDragging = false;
+    }
+
+    function handleTouchStart(e) {
+      const touch = e.touches[0];
+      isDragging = true;
+      dragStart = {
+        x: touch.clientX - position.x,
+        y: touch.clientY - position.y
+      };
+    }
+
+    function handleTouchMove(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      
+      position = {
+        x: touch.clientX - dragStart.x,
+        y: touch.clientY - dragStart.y
+      };
+      drawImage();
+    }
+
+    function applyCrop() {
+      if (!canvas) return;
+
+      // Get the cropped image data
+      const croppedData = canvas.toDataURL('image/png');
+      
+      // Store in hidden input
+      document.getElementById('croppedImageData').value = croppedData;
+      
+      // Update preview
+      const preview = document.getElementById('profilePreview');
+      if (preview.tagName === 'IMG') {
+        preview.src = croppedData;
+      } else {
+        preview.outerHTML = '<img src="' + croppedData + '" alt="Profile Preview" class="profile-preview" id="profilePreview">';
+      }
+      
+      // Show save button
+      document.getElementById('saveBtn').style.display = 'flex';
+      
+      // Hide modal
+      document.getElementById('cropperModal').classList.remove('active');
+    }
+
+    function cancelCrop() {
+      document.getElementById('cropperModal').classList.remove('active');
+      document.getElementById('profile_picture').value = '';
+    }
 
     // Toggle password visibility
     function togglePasswordField(inputId, iconId) {
@@ -1135,7 +896,7 @@ if ($security_settings['require_uppercase']) {
           feedback.push('Special character (!@#$%^&*)');
         }
       } else {
-        strength += 25; // Skip if not required
+        strength += 25;
       }
       
       // Check numbers
@@ -1146,7 +907,7 @@ if ($security_settings['require_uppercase']) {
           feedback.push('Number (0-9)');
         }
       } else {
-        strength += 25; // Skip if not required
+        strength += 25;
       }
       
       // Check uppercase
@@ -1157,7 +918,7 @@ if ($security_settings['require_uppercase']) {
           feedback.push('Uppercase letter (A-Z)');
         }
       } else {
-        strength += 25; // Skip if not required
+        strength += 25;
       }
       
       // Update strength bar
@@ -1183,74 +944,57 @@ if ($security_settings['require_uppercase']) {
     }
 
     // Validate password on form submit
-    document.getElementById('passwordForm').addEventListener('submit', function(e) {
-      const password = document.getElementById('new_password').value;
-      const confirmPassword = document.getElementById('confirm_password').value;
-      
-      let errors = [];
-      
-      // Check all requirements
-      if (password.length < securitySettings.minLength) {
-        errors.push(`Password must be at least ${securitySettings.minLength} characters long.`);
-      }
-      
-      if (securitySettings.requireSpecialChars && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-        errors.push('Password must contain at least one special character (!@#$%^&*).');
-      }
-      
-      if (securitySettings.requireNumbers && !/[0-9]/.test(password)) {
-        errors.push('Password must contain at least one number (0-9).');
-      }
-      
-      if (securitySettings.requireUppercase && !/[A-Z]/.test(password)) {
-        errors.push('Password must contain at least one uppercase letter (A-Z).');
-      }
-      
-      if (password !== confirmPassword) {
-        errors.push('Passwords do not match.');
-      }
-      
-      if (errors.length > 0) {
-        e.preventDefault();
-        alert(errors.join('\n'));
-        return false;
-      }
-    });
-
-    function previewFile() {
-      const file = document.getElementById('profile_picture').files[0];
-      const preview = document.getElementById('profilePreview');
-      const reader = new FileReader();
-
-      if (file) {
-        // Validate file size
-        if (file.size > 5242880) {
-          alert('File size too large. Maximum 5MB allowed.');
-          document.getElementById('profile_picture').value = '';
-          return;
-        }
-
-        // Validate file type
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-        if (!allowedTypes.includes(file.type)) {
-          alert('Invalid file type. Only JPG, PNG, and GIF allowed.');
-          document.getElementById('profile_picture').value = '';
-          return;
-        }
-
-        reader.onload = function(e) {
-          if (preview.tagName === 'IMG') {
-            preview.src = e.target.result;
-          } else {
-            preview.outerHTML = '<img src="' + e.target.result + '" alt="Profile Preview" class="profile-preview" id="profilePreview">';
-          }
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    // Auto-hide alerts after 5 seconds
     document.addEventListener('DOMContentLoaded', function() {
+      const passwordForm = document.getElementById('passwordForm');
+      if (passwordForm) {
+        passwordForm.addEventListener('submit', function(e) {
+          const password = document.getElementById('new_password').value;
+          const confirmPassword = document.getElementById('confirm_password').value;
+          
+          let errors = [];
+          
+          if (password.length < securitySettings.minLength) {
+            errors.push(`Password must be at least ${securitySettings.minLength} characters long.`);
+          }
+          
+          if (securitySettings.requireSpecialChars && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+            errors.push('Password must contain at least one special character (!@#$%^&*).');
+          }
+          
+          if (securitySettings.requireNumbers && !/[0-9]/.test(password)) {
+            errors.push('Password must contain at least one number (0-9).');
+          }
+          
+          if (securitySettings.requireUppercase && !/[A-Z]/.test(password)) {
+            errors.push('Password must contain at least one uppercase letter (A-Z).');
+          }
+          
+          if (password !== confirmPassword) {
+            errors.push('Passwords do not match.');
+          }
+          
+          if (errors.length > 0) {
+            e.preventDefault();
+            alert(errors.join('\n'));
+            return false;
+          }
+        });
+      }
+
+      // Password confirmation validation
+      const confirmPasswordInput = document.querySelector('input[name="confirm_password"]');
+      if (confirmPasswordInput) {
+        confirmPasswordInput.addEventListener('input', function() {
+          const newPasswordInput = document.querySelector('input[name="new_password"]');
+          if (newPasswordInput.value !== confirmPasswordInput.value) {
+            confirmPasswordInput.setCustomValidity('Passwords do not match');
+          } else {
+            confirmPasswordInput.setCustomValidity('');
+          }
+        });
+      }
+
+      // Auto-hide alerts after 5 seconds
       const alerts = document.querySelectorAll('.alert');
       alerts.forEach(function(alert) {
         setTimeout(function() {
@@ -1280,19 +1024,6 @@ if ($security_settings['require_uppercase']) {
         document.getElementById('daily_budget').value = (monthly / 30).toFixed(2);
         document.getElementById('weekly_budget').value = (monthly / 4.33).toFixed(2);
       }
-    }
-
-    // Password confirmation validation
-    const confirmPasswordInput = document.querySelector('input[name="confirm_password"]');
-    if (confirmPasswordInput) {
-      confirmPasswordInput.addEventListener('input', function() {
-        const newPasswordInput = document.querySelector('input[name="new_password"]');
-        if (newPasswordInput.value !== confirmPasswordInput.value) {
-          confirmPasswordInput.setCustomValidity('Passwords do not match');
-        } else {
-          confirmPasswordInput.setCustomValidity('');
-        }
-      });
     }
 
     layout_change('false');
