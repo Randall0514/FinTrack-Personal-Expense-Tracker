@@ -29,3 +29,10 @@ function sortTable(column) {
 
     window.location.search = urlParams.toString();
 }
+layout_change('false');
+layout_theme_sidebar_change('dark');
+change_box_container('false');
+layout_caption_change('true');
+layout_rtl_change('false');
+preset_change('preset-1');
+main_layout_change('vertical');

@@ -58,8 +58,13 @@ if (isset($_POST['toggle_auto_approval'])) {
     if ($stmt->execute()) {
         if ($new_status === '1') {
             // Auto-approve all pending users when turning on automatic approval
-            $conn->query("UPDATE users SET is_approved = 1 WHERE is_approved = 0 OR is_approved IS NULL");
-            $message = "Automatic approval enabled! All pending users have been approved.";
+            $affected = $conn->query("UPDATE users SET is_approved = 1 WHERE is_approved = 0 OR is_approved IS NULL");
+            $count = $conn->affected_rows;
+            if ($count > 0) {
+                $message = "Automatic approval enabled! {$count} pending user(s) have been approved.";
+            } else {
+                $message = "Automatic approval enabled! All future users will be automatically approved.";
+            }
         } else {
             $message = "Automatic approval disabled. New users will require manual approval.";
         }
@@ -68,6 +73,7 @@ if (isset($_POST['toggle_auto_approval'])) {
         $message = "Error updating approval setting: " . $conn->error;
         $message_type = "error";
     }
+    $stmt->close();
 }
 
 // Get current auto-approval setting
@@ -92,6 +98,7 @@ if (isset($_POST['approve_user'])) {
         $message = "Error approving user: " . $conn->error;
         $message_type = "error";
     }
+    $stmt->close();
 }
 
 // Reject user
@@ -108,6 +115,7 @@ if (isset($_POST['reject_user'])) {
         $message = "Error rejecting user: " . $conn->error;
         $message_type = "error";
     }
+    $stmt->close();
 }
 
 // Approve all pending users
@@ -115,12 +123,14 @@ if (isset($_POST['approve_all'])) {
     $stmt = $conn->prepare("UPDATE users SET is_approved = 1 WHERE is_approved = 0 OR is_approved IS NULL");
     
     if ($stmt->execute()) {
-        $message = "All pending users approved successfully!";
+        $count = $stmt->affected_rows;
+        $message = "All {$count} pending user(s) approved successfully!";
         $message_type = "success";
     } else {
         $message = "Error approving all users: " . $conn->error;
         $message_type = "error";
     }
+    $stmt->close();
 }
 
 // Get pending users
@@ -141,6 +151,9 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
     <link rel="icon" type="image/png" href="../logo.png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" />
+    <link rel="stylesheet" href="../assets/css/style.css" id="main-style-link" />
     <link rel="stylesheet" href="style/user_approval.css">
 </head>
 <body>
@@ -237,13 +250,13 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
                         </div>
                     </div>
                     
-                    <form method="POST" class="toggle-form">
-                        <input type="hidden" name="auto_approval_status" value="<?php echo $auto_approval_enabled ? '0' : '1'; ?>">
+                    <form method="POST" id="autoApprovalForm">
+                        <input type="hidden" name="toggle_auto_approval" value="1">
+                        <input type="hidden" name="auto_approval_status" id="autoApprovalStatus" value="<?php echo $auto_approval_enabled ? '0' : '1'; ?>">
                         <label class="toggle-switch">
-                            <input type="checkbox" <?php echo $auto_approval_enabled ? 'checked' : ''; ?> onchange="this.form.submit()">
+                            <input type="checkbox" id="autoApprovalCheckbox" <?php echo $auto_approval_enabled ? 'checked' : ''; ?> onchange="toggleAutoApproval(this)">
                             <span class="toggle-slider"></span>
                         </label>
-                        <input type="hidden" name="toggle_auto_approval" value="1">
                     </form>
                 </div>
                 
@@ -270,7 +283,7 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
                         </div>
                     </div>
                     <?php if (count($pending_users) > 0): ?>
-                        <form method="POST">
+                        <form method="POST" onsubmit="return confirm('Are you sure you want to approve all pending users?');">
                             <button type="submit" name="approve_all" class="btn btn-success">
                                 <i class="fas fa-check-double"></i> Approve All
                             </button>
@@ -291,13 +304,13 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
                                 </div>
                             </div>
                             <div class="user-actions">
-                                <form method="POST">
+                                <form method="POST" style="display: inline;">
                                     <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
                                     <button type="submit" name="approve_user" class="btn btn-success btn-sm">
                                         <i class="fas fa-check"></i> Approve
                                     </button>
                                 </form>
-                                <form method="POST">
+                                <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to reject this user?');">
                                     <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
                                     <button type="submit" name="reject_user" class="btn btn-danger btn-sm">
                                         <i class="fas fa-times"></i> Reject
@@ -345,7 +358,7 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
                             </div>
                             <?php if (!$auto_approval_enabled): ?>
                             <div class="user-actions">
-                                <form method="POST">
+                                <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to revoke approval for this user?');">
                                     <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
                                     <button type="submit" name="reject_user" class="btn btn-danger btn-sm">
                                         <i class="fas fa-ban"></i> Revoke
@@ -367,6 +380,7 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
             </div>
         </div>
     </div>
+    
     <script>
         function confirmLogout(event) {
             event.preventDefault();
@@ -374,6 +388,35 @@ $approved_users = $result->fetch_all(MYSQLI_ASSOC);
                 window.location.href = '../logout.php';
             }
         }
+        
+        function toggleAutoApproval(checkbox) {
+            const form = document.getElementById('autoApprovalForm');
+            const statusInput = document.getElementById('autoApprovalStatus');
+            
+            // Confirm the action
+            const action = checkbox.checked ? 'enable' : 'disable';
+            const message = checkbox.checked 
+                ? 'Are you sure you want to enable automatic approval? All pending users will be approved immediately.' 
+                : 'Are you sure you want to disable automatic approval? New users will require manual approval.';
+            
+            if (confirm(message)) {
+                // Update the hidden input value
+                statusInput.value = checkbox.checked ? '1' : '0';
+                // Submit the form
+                form.submit();
+            } else {
+                // Revert the checkbox state if user cancels
+                checkbox.checked = !checkbox.checked;
+            }
+        }
+        
+        layout_change('false');
+        layout_theme_sidebar_change('dark');
+        change_box_container('false');
+        layout_caption_change('true');
+        layout_rtl_change('false');
+        preset_change('preset-1');
+        main_layout_change('vertical');
     </script>
 </body>
 </html>

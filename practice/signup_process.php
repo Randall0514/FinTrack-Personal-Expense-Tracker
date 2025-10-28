@@ -49,15 +49,29 @@ if (isset($_POST['submit'])) {
     }
     $check->close();
 
+    // Check if auto-approval is enabled
+    $is_approved = 0; // Default to not approved (manual approval)
+    $auto_approval_result = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'auto_approval'");
+    if ($auto_approval_result && $auto_approval_result->num_rows > 0) {
+        $setting = $auto_approval_result->fetch_assoc();
+        if ($setting['setting_value'] === '1') {
+            $is_approved = 1; // Auto-approve the user
+        }
+    }
+
     // Hash password
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-    // Insert new user
-    $stmt = $conn->prepare("INSERT INTO users (fullname, username, email, password) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("ssss", $fullname, $username, $email, $hashedPassword);
+    // Insert new user with approval status
+    $stmt = $conn->prepare("INSERT INTO users (fullname, username, email, password, is_approved) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssi", $fullname, $username, $email, $hashedPassword, $is_approved);
 
     if ($stmt->execute()) {
-        echo "<script>alert('Registration successful! You can now log in.'); window.location.href='login.php';</script>";
+        if ($is_approved === 1) {
+            echo "<script>alert('Registration successful! You can now log in.'); window.location.href='login.php';</script>";
+        } else {
+            echo "<script>alert('Registration successful! Your account is pending admin approval. You will be able to log in once approved.'); window.location.href='login.php';</script>";
+        }
     } else {
         echo "<script>alert('Registration failed. Please try again.'); window.history.back();</script>";
     }

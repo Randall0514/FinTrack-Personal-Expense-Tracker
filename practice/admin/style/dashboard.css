@@ -644,3 +644,57 @@ tr:hover td {
     display: flex;
     gap: 8px;
 }
+
+
+/* Responsive dashboard grid layout */
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1.5rem;
+}
+
+
+/* Tablet screens */
+
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+
+
+/* Mobile screens */
+
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+
+/* Extra small screens */
+
+@media (max-width: 640px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* Card styling */
+
+.budget-card,
+.card {
+    width: 100%;
+    border-radius: 1rem;
+    padding: 1.25rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.budget-card:hover,
+.card:hover {
+    transform: translateY(-2px);
+}
