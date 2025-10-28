@@ -145,7 +145,7 @@ $admin_users = count(array_filter($users, function($u) { return isset($u['is_adm
                 <i class="fas fa-user-tag"></i>
                 <span>Account Ownership</span>
             </a>
-            <a href="../logout.php" class="nav-item">
+            <a href="#" onclick="confirmLogout(event)" class="nav-item">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
             </a>
@@ -335,5 +335,13 @@ $admin_users = count(array_filter($users, function($u) { return isset($u['is_adm
     </div>
     
     <script src="script/user_management.js"></script>
+    <script>
+        function confirmLogout(event) {
+            event.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                window.location.href = '../logout.php';
+            }
+        }
+    </script>
 </body>
 </html>

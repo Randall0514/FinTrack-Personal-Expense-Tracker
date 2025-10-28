@@ -375,11 +375,6 @@
               </div>
             </div>
 
-            <div class="checkbox-container">
-              <input type="checkbox" id="remember" name="remember" />
-              <label for="remember">Remember me</label>
-            </div>
-
             <div class="forgot-password">
               <a href="forgot_password.php">Forgot Password?</a>
             </div>

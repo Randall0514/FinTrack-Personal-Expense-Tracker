@@ -177,9 +177,10 @@ foreach ($users as $user) {
                 <i class="fas fa-user-tag"></i>
                 <span>Account Ownership</span>
             </a>
-            <a href="../logout.php" class="nav-item">
+            <a href="#" onclick="confirmLogout(event)" class="nav-item">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
+            </a>
             </a>
         </div>
         
@@ -388,6 +389,14 @@ foreach ($users as $user) {
     </div>
     
  
-    <script src="script/account_ownership.js"></script>   
+    <script src="script/account_ownership.js"></script>  
+    <script>
+        function confirmLogout(event) {
+            event.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                window.location.href = '../logout.php';
+            }
+        }
+    </script> 
 </body>
 </html>

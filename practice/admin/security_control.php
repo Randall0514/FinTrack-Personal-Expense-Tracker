@@ -293,7 +293,10 @@ function toggleOrder($current_order) {
             <a href="security_control.php" class="nav-item active"><i class="fas fa-shield-alt"></i><span>Security Control</span></a>
             <a href="user_approval.php" class="nav-item"><i class="fas fa-check-circle"></i><span>User Approval</span></a>
             <a href="account_ownership.php" class="nav-item"><i class="fas fa-user-tag"></i><span>Account Ownership</span></a>
-            <a href="../logout.php" class="nav-item"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+            <a href="#" onclick="confirmLogout(event)" class="nav-item">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
         </div>
         <div class="main-content">
             <div class="header">
@@ -541,5 +544,13 @@ function toggleOrder($current_order) {
     </div>
 
     <script src="script/security_control.js"></script>
+    <script>
+        function confirmLogout(event) {
+            event.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                window.location.href = '../logout.php';
+            }
+        }
+    </script>
 </body>
 </html>

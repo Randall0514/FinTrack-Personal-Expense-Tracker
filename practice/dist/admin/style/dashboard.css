@@ -338,6 +338,42 @@ body {
     border-color: #667eea;
 }
 
+
+/* Scrollable textarea styling */
+
+.quick-add-form textarea {
+    resize: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 50px;
+    max-height: 120px;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(102, 126, 234, 0.3) rgba(0, 0, 0, 0.05);
+}
+
+
+/* Webkit browsers scrollbar styling */
+
+.quick-add-form textarea::-webkit-scrollbar {
+    width: 6px;
+}
+
+.quick-add-form textarea::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+}
+
+.quick-add-form textarea::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+}
+
+.quick-add-form textarea::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
 .quick-add-btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
