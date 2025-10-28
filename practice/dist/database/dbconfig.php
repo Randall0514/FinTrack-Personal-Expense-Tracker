@@ -2,7 +2,7 @@
 $host = "localhost";
 $user = "root"; // your DB username
 $pass = "";     // your DB password
-$db   = "fintrack"; // your database name
+$db   = "fintrack_db"; // your database name
 
 $conn = new mysqli($host, $user, $pass, $db);
 
